@@ -1,5 +1,4 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use vault::{
     state::{Appraisal, APPRAISAL_SEED},
@@ -20,6 +19,7 @@ pub struct EditSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        constraint = Order::validate_edit_side(data.side, market.state),
         seeds = [MARKET_SEED.as_ref(),
         market.owner.as_ref(),
         market.pool_mint.as_ref()],
@@ -45,7 +45,8 @@ pub struct EditSellOrder<'info> {
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
     pub nft_mint: Box<Account<'info, Mint>>,
-    pub nft_metadata: Box<Account<'info, Metadata>>,
+    /// CHECK: constraint checks in cpis
+    pub nft_edition: UncheckedAccount<'info>,
     #[account(
         mut,
         constraint = nft_ta.owner == initializer.key(),
@@ -78,7 +79,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     if EditSide::is_increase(data.side) {
         freeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
-            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
             ctx.accounts.nft_ta.to_account_info(),
             ctx.accounts.order.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
@@ -89,7 +90,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     } else {
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
-            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
             ctx.accounts.nft_ta.to_account_info(),
             ctx.accounts.order.to_account_info(),
             ctx.accounts.token_program.to_account_info(),

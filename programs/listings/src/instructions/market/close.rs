@@ -20,6 +20,6 @@ pub struct CloseMarket<'info> {
 
 pub fn handler(ctx: Context<CloseMarket>) -> ProgramResult {
     msg!("Closing market");
-    ctx.accounts.market.state = MarketState::Closed;
+    ctx.accounts.market.state = MarketState::Closed.into();
     Ok(())
 }

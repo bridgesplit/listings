@@ -10,6 +10,14 @@ pub struct EditBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        constraint = Order::validate_edit_side(data.side, market.state),
+        seeds = [MARKET_SEED.as_ref(),
+        market.owner.as_ref(),
+        market.pool_mint.as_ref()],
+        bump,
+    )]
+    pub market: Box<Account<'info, Market>>,
+    #[account(
         mut,
         constraint = order.owner == initializer.key(),
         // cannot increase size of order if it is already filled/cancelled

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use num_enum::IntoPrimitive;
 
 pub const MARKET_VERSION: u8 = 1;
 
@@ -11,12 +12,13 @@ pub struct Market {
     /// owner of the market - can edit and close the market
     pub owner: Pubkey,
     /// state representing the market - open/closed
-    pub state: MarketState,
+    pub state: u8,
     /// reserved space for future changes
     pub reserve: [u8; 512],
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq, IntoPrimitive)]
+#[repr(u8)]
 pub enum MarketState {
     /// market is open and can be used to create orders
     Open,
@@ -30,11 +32,11 @@ impl Market {
         self.version = MARKET_VERSION;
         self.pool_mint = pool_mint;
         self.owner = owner;
-        self.state = MarketState::Open;
+        self.state = MarketState::Open.into();
     }
 
     /// return true if the market is active
-    pub fn is_active(state: MarketState) -> bool {
-        state != MarketState::Closed
+    pub fn is_active(state: u8) -> bool {
+        state != <MarketState as Into<u8>>::into(MarketState::Closed)
     }
 }
