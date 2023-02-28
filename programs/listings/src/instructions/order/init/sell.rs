@@ -60,7 +60,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         &mut ctx.accounts.order,
         ctx.accounts.market.key(),
         ctx.accounts.initializer.key(),
-        data.side,
+        OrderSide::Sell.into(),
         1,
         data.price,
         OrderState::Ready.into(),

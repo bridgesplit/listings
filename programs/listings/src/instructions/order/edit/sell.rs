@@ -47,6 +47,7 @@ pub struct EditSellOrder<'info> {
     pub nft_mint: Box<Account<'info, Mint>>,
     pub nft_metadata: Box<Account<'info, Metadata>>,
     #[account(
+        mut,
         constraint = nft_ta.owner == initializer.key(),
         constraint = nft_ta.mint == nft_mint.key(),
     )]
