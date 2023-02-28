@@ -1,6 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-pub mod errors;
 mod instructions;
 pub mod state;
 pub mod utils;
