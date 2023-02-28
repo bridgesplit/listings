@@ -1,0 +1,12 @@
+/*-dump.txt
+/*.so
+/target/
+/*/target/
+/*/*/target/
+/*/*/*/target/
+/*/*/*/*/target/
+/*/*/*/*/*/target/
+/.anchor
+/test-ledger
+/node_modules
+package-lock.json
