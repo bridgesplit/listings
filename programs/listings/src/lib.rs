@@ -16,10 +16,6 @@ pub mod listings {
         instructions::market::init::handler(ctx)
     }
 
-    pub fn edit_market(ctx: Context<EditMarket>) -> ProgramResult {
-        instructions::market::edit::handler(ctx)
-    }
-
     pub fn close_market(ctx: Context<CloseMarket>) -> ProgramResult {
         instructions::market::close::handler(ctx)
     }
