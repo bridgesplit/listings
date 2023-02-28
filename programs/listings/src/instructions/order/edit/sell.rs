@@ -7,6 +7,7 @@ use vault::{
 };
 
 use crate::{
+    instructions::order::edit::EditSide,
     state::*,
     utils::{freeze_nft, unfreeze_nft},
 };
@@ -73,7 +74,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     Order::edit(&mut ctx.accounts.order, data.price, data.side);
 
     // freeze the nft of the seller with the order account as the authority if edit side is increase and vice versa
-    if data.side.is_increase() {
+    if EditSide::is_increase(data.side) {
         freeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
             ctx.accounts.nft_metadata.to_account_info(),

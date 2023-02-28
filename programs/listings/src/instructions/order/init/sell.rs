@@ -63,7 +63,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         data.side,
         1,
         data.price,
-        OrderState::Ready,
+        OrderState::Ready.into(),
     );
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("order").unwrap());

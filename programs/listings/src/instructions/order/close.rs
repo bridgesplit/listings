@@ -22,6 +22,6 @@ pub struct CloseOrder<'info> {
 
 pub fn handler(ctx: Context<CloseOrder>) -> ProgramResult {
     msg!("Close order account");
-    ctx.accounts.order.state = OrderState::Closed;
+    ctx.accounts.order.state = OrderState::Closed.into();
     Ok(())
 }

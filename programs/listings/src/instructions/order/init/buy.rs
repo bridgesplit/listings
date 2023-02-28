@@ -43,7 +43,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         data.side,
         1,
         data.price,
-        OrderState::Ready,
+        OrderState::Ready.into(),
     );
 
     // transfer the buy amount sol to the order account

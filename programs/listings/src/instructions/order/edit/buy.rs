@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{state::*, utils::transfer_sol};
+use crate::{instructions::order::edit::EditSide, state::*, utils::transfer_sol};
 
 use super::EditOrderData;
 
@@ -30,7 +30,7 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult
     // edit the order with size
     Order::edit(&mut ctx.accounts.order, data.price, data.side);
 
-    if data.side.is_increase() {
+    if EditSide::is_increase(data.side) {
         // transfer sol from owner to order account if size is increased
         transfer_sol(
             ctx.accounts.initializer.to_account_info(),

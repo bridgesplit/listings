@@ -1194,6 +1194,7 @@ dependencies = [
  "anchor-spl",
  "cargo-husky",
  "mpl-token-metadata 1.8.5 (git+https://github.com/metaplex-foundation/metaplex-program-library)",
+ "num_enum",
  "vault",
 ]
 

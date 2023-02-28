@@ -88,8 +88,6 @@ pub struct FillOrder<'info> {
 
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> ProgramResult {
     msg!("Filling order");
-    // unfreeze nft first so that a transfer can be made
-
     let bump = &get_bump_in_seed_form(ctx.bumps.get("sell_order").unwrap());
 
     let signer_seeds = &[&[
@@ -100,6 +98,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
         bump,
     ][..]];
 
+    // unfreeze nft first so that a transfer can be made
     unfreeze_nft(
         ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_edition.to_account_info(),
@@ -111,6 +110,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
     )?;
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
+
     // transfer nft from sell order account to buyer
     transfer_nft(
         ctx.accounts.sell_order.to_account_info(),
@@ -149,11 +149,19 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
 
     // edit buy order
     let buy_price = ctx.accounts.buy_order.price;
-    Order::edit(&mut ctx.accounts.buy_order, buy_price, EditSide::Decrease);
+    Order::edit(
+        &mut ctx.accounts.buy_order,
+        buy_price,
+        EditSide::Decrease.into(),
+    );
 
     // edit sell order
     let sell_price = ctx.accounts.sell_order.price;
-    Order::edit(&mut ctx.accounts.sell_order, sell_price, EditSide::Decrease);
+    Order::edit(
+        &mut ctx.accounts.sell_order,
+        sell_price,
+        EditSide::Decrease.into(),
+    );
 
     Ok(())
 }
