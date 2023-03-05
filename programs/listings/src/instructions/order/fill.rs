@@ -21,14 +21,10 @@ use super::EditSide;
 pub struct FillOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
-    #[account(
-        constraint = buy_order.owner == buyer.key()
-    )]
+    #[account()]
     /// CHECK: constraint check
     pub buyer: UncheckedAccount<'info>,
-    #[account(
-        constraint = buy_order.owner == buyer.key()
-    )]
+    #[account()]
     /// CHECK: constraint check
     pub seller: UncheckedAccount<'info>,
     #[account(
@@ -41,31 +37,22 @@ pub struct FillOrder<'info> {
     pub market: Box<Account<'info, Market>>,
     #[account(
         mut,
-        constraint = Order::is_active(sell_order.state),
-        constraint = sell_order.market == market.key(),
+        constraint = Order::is_active(order.state),
+        constraint = order.market == market.key(),
         seeds = [ORDER_SEED.as_ref(),
-        sell_order.nonce.as_ref(),
-        sell_order.owner.as_ref(),
+        order.nonce.as_ref(),
+        order.owner.as_ref(),
         market.key().as_ref()],
         bump,
     )]
-    pub sell_order: Box<Account<'info, Order>>,
-    #[account(
-        mut,
-        constraint = Order::is_active(buy_order.state),
-        constraint = buy_order.market == market.key(),
-        seeds = [ORDER_SEED.as_ref(),
-        buy_order.nonce.as_ref(),
-        buy_order.owner.as_ref(),
-        market.key().as_ref()],
-        bump,
-    )]
-    pub buy_order: Box<Account<'info, Order>>,
+    pub order: Box<Account<'info, Order>>,
     pub nft_mint: Box<Account<'info, Mint>>,
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
+        init_if_needed,
+        payer = initializer,
         associated_token::mint = nft_mint,
         associated_token::authority = seller,
     )]
@@ -86,34 +73,54 @@ pub struct FillOrder<'info> {
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
 }
 
+/// seller is always the one who is transferring the nft
+/// buyer is always the one who is receiving the nft
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> ProgramResult {
     msg!("Filling order");
+
+
     let bump = &get_bump_in_seed_form(ctx.bumps.get("sell_order").unwrap());
 
     let signer_seeds = &[&[
         ORDER_SEED.as_ref(),
-        ctx.accounts.sell_order.nonce.as_ref(),
-        ctx.accounts.sell_order.market.as_ref(),
-        ctx.accounts.sell_order.owner.as_ref(),
+        ctx.accounts.order.nonce.as_ref(),
+        ctx.accounts.order.market.as_ref(),
+        ctx.accounts.order.owner.as_ref(),
         bump,
     ][..]];
 
-    // unfreeze nft first so that a transfer can be made
-    unfreeze_nft(
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.sell_order.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-    )?;
+    let nft_authority: AccountInfo;
+    let sol_holder: AccountInfo;
+
+    if ctx.accounts.order.side == <OrderSide as Into<u8>>::into(OrderSide::Buy) {
+        // Initializer is seller and selling an nft to fill a buy order
+        // transfer nft from seller to buyer
+        // transfer sol from order account to seller
+        nft_authority = ctx.accounts.seller.to_account_info();
+        sol_holder = ctx.accounts.order.to_account_info();
+    } else {
+        // Initializer is buyer and buying an nft to fill a sell order
+        // transfer nft from order account to buyer
+        // transfer sol from buyer to seller
+        // unfreeze nft first so that a transfer can be made
+        unfreeze_nft(
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
+            ctx.accounts.seller_nft_ta.to_account_info(),
+            ctx.accounts.order.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            signer_seeds,
+        )?;
+        nft_authority = ctx.accounts.order.to_account_info();
+        sol_holder = ctx.accounts.buyer.to_account_info();
+    }
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
-    // transfer nft from sell order account to buyer
+    // transfer nft
     transfer_nft(
-        ctx.accounts.sell_order.to_account_info(),
+        nft_authority,
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.buyer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
@@ -129,37 +136,19 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
         remaining_accounts,
     )?;
 
-    // transfer sol from buy order account to seller
+    // transfer sol from buyer to seller
     transfer_sol(
-        ctx.accounts.buy_order.to_account_info(),
+        sol_holder,
         ctx.accounts.seller.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.sell_order.price,
+        ctx.accounts.order.price,
     )?;
 
-    // if buy order price is greater than sell order price transfer remaining sol to buyer back
-    if Order::spill_over(ctx.accounts.buy_order.price, ctx.accounts.sell_order.price) {
-        transfer_sol(
-            ctx.accounts.buy_order.to_account_info(),
-            ctx.accounts.buyer.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            ctx.accounts.buy_order.price - ctx.accounts.sell_order.price,
-        )?;
-    };
-
-    // edit buy order
-    let buy_price = ctx.accounts.buy_order.price;
+    // edit order
+    let price = ctx.accounts.order.price;
     Order::edit(
-        &mut ctx.accounts.buy_order,
-        buy_price,
-        EditSide::Decrease.into(),
-    );
-
-    // edit sell order
-    let sell_price = ctx.accounts.sell_order.price;
-    Order::edit(
-        &mut ctx.accounts.sell_order,
-        sell_price,
+        &mut ctx.accounts.order,
+        price,
         EditSide::Decrease.into(),
     );
 
