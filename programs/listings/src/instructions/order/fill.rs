@@ -1,13 +1,13 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{entrypoint::ProgramResult, sysvar},
-};
+use anchor_lang::{prelude::*, solana_program::sysvar};
 use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
+use vault::{
+    errors::SpecificErrorCode,
+    utils::{get_bump_in_seed_form, MplTokenMetadata},
+};
 
 use crate::{
     state::*,
@@ -75,9 +75,8 @@ pub struct FillOrder<'info> {
 
 /// seller is always the one who is transferring the nft
 /// buyer is always the one who is receiving the nft
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> ProgramResult {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Result<()> {
     msg!("Filling order");
-
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("sell_order").unwrap());
 
@@ -96,12 +95,23 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
         // Initializer is seller and selling an nft to fill a buy order
         // transfer nft from seller to buyer
         // transfer sol from order account to seller
+
+        // validate buyer
+        if ctx.accounts.order.owner != ctx.accounts.buyer.key() {
+            return Err(SpecificErrorCode::WrongAccount.into());
+        }
         nft_authority = ctx.accounts.seller.to_account_info();
         sol_holder = ctx.accounts.order.to_account_info();
     } else {
         // Initializer is buyer and buying an nft to fill a sell order
         // transfer nft from order account to buyer
         // transfer sol from buyer to seller
+
+        // validate seller
+        if ctx.accounts.order.owner != ctx.accounts.seller.key() {
+            return Err(SpecificErrorCode::WrongAccount.into());
+        }
+
         // unfreeze nft first so that a transfer can be made
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
@@ -146,11 +156,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Prog
 
     // edit order
     let price = ctx.accounts.order.price;
-    Order::edit(
-        &mut ctx.accounts.order,
-        price,
-        EditSide::Decrease.into(),
-    );
+    Order::edit(&mut ctx.accounts.order, price, EditSide::Decrease.into());
 
     Ok(())
 }

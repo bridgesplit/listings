@@ -36,7 +36,7 @@ pub mod listings {
         instructions::order::edit::sell::handler(ctx, data)
     }
 
-    pub fn fill_order<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> ProgramResult {
+    pub fn fill_order<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Result<()> {
         instructions::order::fill::handler(ctx)
     }
 
