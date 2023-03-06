@@ -20,7 +20,7 @@ anchor-spl = "0.26.0"
 mpl-token-metadata = { git = "https://github.com/metaplex-foundation/metaplex-program-library", features = ["no-entrypoint"] }
 vault = {git="ssh://git@github.com/bridgesplit/bridgesplit-program.git", features = ["cpi"]}
 anchor-mpl-token-metadata = {git="ssh://git@github.com/bridgesplit/bridgesplit-program.git"}
-num_enum = "0.5.11"
+num_enum = "0.5.6"
 
 
 [dev-dependencies.cargo-husky]
