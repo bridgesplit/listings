@@ -146,6 +146,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         sol_holder,
         ctx.accounts.seller.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
+        signer_seeds,
         ctx.accounts.order.price,
     )?;
 

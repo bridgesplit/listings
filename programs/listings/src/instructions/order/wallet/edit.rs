@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use vault::utils::get_bump_in_seed_form;
 
 use crate::{state::*, utils::transfer_sol};
 
@@ -20,12 +21,21 @@ pub struct EditBiddingWallet<'info> {
 pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> ProgramResult {
     msg!("Editing sol balancer of the bidding wallet account");
 
+    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
+
+    let signer_seeds = &[&[
+        WALLET_SEED.as_ref(),
+        ctx.accounts.initializer.key.as_ref(),
+        bump,
+    ][..]];
+
     // transfer the amount to the wallet account to initializer if it is a deposit
     // transfer the amount from the wallet account to initializer if it is a withdraw
     transfer_sol(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.wallet.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
+        signer_seeds,
         amount,
     )?;
 

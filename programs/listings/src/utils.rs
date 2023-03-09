@@ -1,9 +1,7 @@
 use anchor_lang::{
     prelude::{AccountInfo, CpiContext},
     solana_program::{
-        entrypoint::ProgramResult,
-        program::{invoke, invoke_signed},
-        system_instruction::transfer,
+        entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
     },
     AnchorDeserialize, ToAccountInfo,
 };
@@ -236,15 +234,17 @@ pub fn transfer_sol<'info>(
     from_account: AccountInfo<'info>,
     to_account: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]; 1],
     amount: u64,
 ) -> ProgramResult {
-    invoke(
+    invoke_signed(
         &transfer(from_account.key, to_account.key, amount),
         &[
             from_account.to_account_info(),
             to_account.to_account_info(),
             system_program.to_account_info(),
         ],
+        signer_seeds,
     )
     .map_err(Into::into)
 }

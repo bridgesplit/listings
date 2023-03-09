@@ -4,13 +4,9 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
+use vault::utils::{get_bump_in_seed_form, lamport_transfer, MplTokenMetadata};
 
-use crate::{
-    instructions::order::edit::EditSide,
-    state::*,
-    utils::{transfer_nft, transfer_sol},
-};
+use crate::{instructions::order::edit::EditSide, state::*, utils::transfer_nft};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -87,9 +83,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         bump,
     ][..]];
 
-    let nft_authority = ctx.accounts.initializer.to_account_info();
-    let sol_holder = ctx.accounts.wallet.to_account_info();
-
     // edit wallet account to decrease balance and active bids
     Wallet::edit(
         &mut ctx.accounts.wallet,
@@ -102,7 +95,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
 
     // transfer nft
     transfer_nft(
-        nft_authority,
+        ctx.accounts.initializer.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.buyer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
@@ -120,10 +113,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     )?;
 
     // transfer sol from buyer to seller
-    transfer_sol(
-        sol_holder,
+    lamport_transfer(
+        ctx.accounts.wallet.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
         ctx.accounts.order.price,
     )?;
 
