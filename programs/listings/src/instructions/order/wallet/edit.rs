@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use vault::utils::get_bump_in_seed_form;
+use vault::utils::{get_bump_in_seed_form, lamport_transfer};
 
-use crate::{state::*, utils::transfer_sol};
+use crate::{instructions::order::edit::EditSide, state::*, utils::transfer_sol};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -29,16 +29,25 @@ pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> P
         bump,
     ][..]];
 
+    Wallet::edit(&mut ctx.accounts.wallet, amount, 0, edit_side);
+
     // transfer the amount to the wallet account to initializer if it is a deposit
     // transfer the amount from the wallet account to initializer if it is a withdraw
-    transfer_sol(
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        signer_seeds,
-        amount,
-    )?;
+    if EditSide::is_increase(edit_side) {
+        transfer_sol(
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+            amount,
+        )?;
+    } else {
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            amount,
+        )?;
+    }
 
-    Wallet::edit(&mut ctx.accounts.wallet, amount, 0, edit_side);
     Ok(())
 }
