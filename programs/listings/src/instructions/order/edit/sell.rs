@@ -47,8 +47,18 @@ pub struct EditSellOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     #[account(
+        init_if_needed,
+        seeds = [TRACKER_SEED.as_ref(),
+        nft_mint.key().as_ref()],
+        bump,
+        payer = initializer,
+        space = 8 + std::mem::size_of::<Tracker>()
+    )]
+    pub tracker: Box<Account<'info, Tracker>>,
+    #[account(
         seeds = [APPRAISAL_SEED, market.pool_mint.as_ref(), nft_mint.key().as_ref()],
         bump,
+        seeds::program = vault::ID,
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
     pub nft_mint: Box<Account<'info, Mint>>,
@@ -61,6 +71,7 @@ pub struct EditSellOrder<'info> {
     )]
     pub nft_ta: Box<Account<'info, TokenAccount>>,
     pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
 }
 
@@ -71,35 +82,41 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
 
     let order = ctx.accounts.order.clone();
 
-    let signer_seeds = &[&[
-        ORDER_SEED.as_ref(),
-        order.nonce.as_ref(),
-        order.market.as_ref(),
-        order.owner.as_ref(),
-        bump,
-    ][..]];
+    let signer_seeds = &[&[WALLET_SEED.as_ref(), order.owner.as_ref(), bump][..]];
 
     // update the sell order account
     Order::edit(&mut ctx.accounts.order, data.price, 1, data.side);
 
-    // freeze the nft of the seller with the order account as the authority if edit side is increase and vice versa
+    // freeze the nft of the seller with the bidding wallet account as the authority if edit side is increase and vice versa
     if EditSide::is_increase(data.side) {
+        // initialize the tracker account
+        Tracker::init(
+            &mut ctx.accounts.tracker,
+            ctx.accounts.market.key(),
+            ctx.accounts.order.key(),
+            ctx.accounts.nft_mint.key(),
+        );
+
         freeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
             ctx.accounts.nft_edition.to_account_info(),
             ctx.accounts.nft_ta.to_account_info(),
-            ctx.accounts.order.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.mpl_token_metadata_program.to_account_info(),
             signer_seeds,
         )?;
     } else {
+        // close the tracker account
+        ctx.accounts
+            .tracker
+            .close(ctx.accounts.initializer.to_account_info())?;
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
             ctx.accounts.nft_edition.to_account_info(),
             ctx.accounts.nft_ta.to_account_info(),
-            ctx.accounts.order.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.mpl_token_metadata_program.to_account_info(),
             signer_seeds,
@@ -107,6 +124,6 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     }
 
     // edit active bids in wallet account
-    Wallet::edit_active_bids(&mut ctx.accounts.wallet, 1, data.side);
+    Wallet::edit(&mut ctx.accounts.wallet, 0, 1, data.side);
     Ok(())
 }

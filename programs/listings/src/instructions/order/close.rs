@@ -13,8 +13,8 @@ pub struct CloseOrder<'info> {
         constraint = order.owner == initializer.key(),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
-        initializer.key().as_ref(),
-        order.market.as_ref()],
+        order.market.as_ref(),
+        initializer.key().as_ref()],
         bump,
     )]
     pub order: Box<Account<'info, Order>>,

@@ -45,9 +45,18 @@ pub mod listings {
         instructions::order::edit::sell::handler(ctx, data)
     }
 
-    /// fill a bid/listing
-    pub fn fill_order<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Result<()> {
-        instructions::order::fill::handler(ctx)
+    /// fill a bid
+    pub fn fill_buy_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>,
+    ) -> Result<()> {
+        instructions::order::fill::buy::handler(ctx)
+    }
+
+    /// fill a listing
+    pub fn fill_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,
+    ) -> Result<()> {
+        instructions::order::fill::sell::handler(ctx)
     }
 
     /// cancel a bid/listing

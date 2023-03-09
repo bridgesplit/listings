@@ -31,18 +31,12 @@ impl Wallet {
     /// edit an order account
     /// if size is 0, order is closed
     /// any size change is considered partial
-    pub fn edit_balance(&mut self, amount: u64, edit_side: u8) {
+    pub fn edit(&mut self, amount: u64, size: u64, edit_side: u8) {
         if EditSide::is_increase(edit_side) {
             self.balance += amount;
-        } else {
-            self.balance -= amount;
-        }
-    }
-
-    pub fn edit_active_bids(&mut self, size: u64, edit_side: u8) {
-        if EditSide::is_increase(edit_side) {
             self.active_bids += size;
         } else {
+            self.balance -= amount;
             self.active_bids -= size;
         }
     }

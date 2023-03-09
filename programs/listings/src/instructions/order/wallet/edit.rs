@@ -29,6 +29,6 @@ pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> P
         amount,
     )?;
 
-    Wallet::edit_balance(&mut ctx.accounts.wallet, amount, edit_side);
+    Wallet::edit(&mut ctx.accounts.wallet, amount, 0, edit_side);
     Ok(())
 }

@@ -37,7 +37,6 @@ pub struct InitBuyOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
@@ -49,6 +48,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         ctx.accounts.market.key(),
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
+        data.nonce,
         OrderSide::Buy.into(),
         data.size,
         data.price,
@@ -56,8 +56,9 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
     );
 
     // increase wallet active bids
-    Wallet::edit_active_bids(
+    Wallet::edit(
         &mut ctx.accounts.wallet,
+        0,
         data.size,
         EditSide::Increase.into(),
     );

@@ -196,6 +196,7 @@ pub fn transfer_nft<'info>(
     associated_token_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
     remaining_accounts: Vec<AccountInfo<'info>>,
+    signer_seeds: &[&[&[u8]]; 1],
 ) -> Result<(), anchor_lang::prelude::Error> {
     let transfer_params = get_metaplex_transfer_params(remaining_accounts, None);
     let metadata = Metadata::deserialize(&mut &nft_metadata.data.borrow_mut()[..])?;
@@ -223,7 +224,8 @@ pub fn transfer_nft<'info>(
 
     // do a normal token transfer in case the nft is not a pnft
     token::transfer(
-        transfer_nft_token(from_nft_ta, to_nft_ta, authority, token_program),
+        transfer_nft_token(from_nft_ta, to_nft_ta, authority, token_program)
+            .with_signer(signer_seeds),
         1,
     )
 }

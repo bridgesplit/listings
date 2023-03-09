@@ -60,6 +60,7 @@ impl Order {
         market: Pubkey,
         owner: Pubkey,
         wallet: Pubkey,
+        nonce: Pubkey,
         side: u8,
         size: u64,
         price: u64,
@@ -67,6 +68,7 @@ impl Order {
     ) {
         self.version = ORDER_VERSION;
         self.market = market;
+        self.nonce = nonce;
         self.owner = owner;
         self.wallet = wallet;
         self.side = side;

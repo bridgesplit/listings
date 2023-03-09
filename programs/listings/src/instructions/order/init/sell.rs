@@ -42,18 +42,28 @@ pub struct InitSellOrder<'info> {
     #[account(
         seeds = [APPRAISAL_SEED, market.pool_mint.as_ref(), nft_mint.key().as_ref()],
         bump,
+        seeds::program = vault::ID,
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
+    #[account(
+        init,
+        seeds = [TRACKER_SEED.as_ref(),
+        nft_mint.key().as_ref()],
+        bump,
+        payer = initializer,
+        space = 8 + std::mem::size_of::<Tracker>()
+    )]
+    pub tracker: Box<Account<'info, Tracker>>,
     pub nft_mint: Box<Account<'info, Mint>>,
     /// CHECK: checked in cpi
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
+        mut,
         constraint = nft_ta.owner == initializer.key(),
         constraint = nft_ta.mint == nft_mint.key(),
     )]
     pub nft_ta: Box<Account<'info, TokenAccount>>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
 }
@@ -67,34 +77,41 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.market.key(),
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
+        data.nonce,
         OrderSide::Sell.into(),
         1,
         data.price,
         OrderState::Ready.into(),
     );
 
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("order").unwrap());
+    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let signer_seeds = &[&[
-        ORDER_SEED.as_ref(),
-        ctx.accounts.order.nonce.as_ref(),
-        ctx.accounts.order.market.as_ref(),
-        ctx.accounts.order.owner.as_ref(),
+        WALLET_SEED.as_ref(),
+        ctx.accounts.initializer.key.as_ref(),
         bump,
     ][..]];
 
-    // freeze the nft of the seller with the order account as the authority
+    // initialize the nft tracker
+    Tracker::init(
+        &mut ctx.accounts.tracker,
+        ctx.accounts.market.key(),
+        ctx.accounts.order.key(),
+        ctx.accounts.nft_mint.key(),
+    );
+
+    // freeze the nft of the seller with the bidding wallet account as the authority
     freeze_nft(
         ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_edition.to_account_info(),
         ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.order.to_account_info(),
+        ctx.accounts.wallet.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         signer_seeds,
     )?;
 
-    Wallet::edit_active_bids(&mut ctx.accounts.wallet, 1, EditSide::Increase.into());
+    Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Increase.into());
     Ok(())
 }

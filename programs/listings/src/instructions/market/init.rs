@@ -20,7 +20,6 @@ pub struct InitMarket<'info> {
     )]
     pub market: Box<Account<'info, Market>>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<InitMarket>) -> ProgramResult {

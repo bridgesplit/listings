@@ -22,13 +22,15 @@ pub struct InitBiddingWallet<'info> {
 pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
     msg!("Initializing a new bidding wallet account");
 
-    // transfer the amount to the wallet account to initializer
-    transfer_sol(
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        amount,
-    )?;
+    // transfer the amount to the wallet account to initializer if amount > 0
+    if amount > 0 {
+        transfer_sol(
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            amount,
+        )?;
+    }
 
     Wallet::init(
         &mut ctx.accounts.wallet,

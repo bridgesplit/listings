@@ -46,6 +46,6 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult
     Order::edit(&mut ctx.accounts.order, data.price, data.size, data.side);
 
     // edit wallet active bids
-    Wallet::edit_active_bids(&mut ctx.accounts.wallet, data.size, data.side);
+    Wallet::edit(&mut ctx.accounts.wallet, 0, data.size, data.side);
     Ok(())
 }

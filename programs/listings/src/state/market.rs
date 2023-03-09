@@ -28,10 +28,10 @@ pub enum MarketState {
 
 impl Market {
     /// initialize a new market
-    pub fn init(&mut self, pool_mint: Pubkey, owner: Pubkey) {
+    pub fn init(&mut self, pool_mint: Pubkey, initializer: Pubkey) {
         self.version = MARKET_VERSION;
         self.pool_mint = pool_mint;
-        self.initializer = owner;
+        self.initializer = initializer;
         self.state = MarketState::Open.into();
     }
 
