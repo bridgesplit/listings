@@ -5,7 +5,7 @@ use vault::{
     utils::{get_bump_in_seed_form, MplTokenMetadata},
 };
 
-use crate::{state::*, utils::freeze_nft};
+use crate::{instructions::order::edit::EditSide, state::*, utils::freeze_nft};
 
 use super::InitOrderData;
 
@@ -15,9 +15,15 @@ pub struct InitSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        mut,
+        seeds = [WALLET_SEED.as_ref(),
+        initializer.key().as_ref()],
+        bump,
+    )]
+    pub wallet: Box<Account<'info, Wallet>>,
+    #[account(
         constraint = Market::is_active(market.state),
         seeds = [MARKET_SEED.as_ref(),
-        market.owner.as_ref(),
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -60,6 +66,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         &mut ctx.accounts.order,
         ctx.accounts.market.key(),
         ctx.accounts.initializer.key(),
+        ctx.accounts.wallet.key(),
         OrderSide::Sell.into(),
         1,
         data.price,
@@ -87,5 +94,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         signer_seeds,
     )?;
+
+    Wallet::edit_active_bids(&mut ctx.accounts.wallet, 1, EditSide::Increase.into());
     Ok(())
 }

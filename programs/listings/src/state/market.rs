@@ -9,8 +9,8 @@ pub struct Market {
     pub version: u8,
     /// mint of the index to which the NFTs belong to
     pub pool_mint: Pubkey,
-    /// owner of the market - can edit and close the market
-    pub owner: Pubkey,
+    /// initializer of the market - can edit and close the market
+    pub initializer: Pubkey,
     /// state representing the market - open/closed
     pub state: u8,
     /// reserved space for future changes
@@ -31,7 +31,7 @@ impl Market {
     pub fn init(&mut self, pool_mint: Pubkey, owner: Pubkey) {
         self.version = MARKET_VERSION;
         self.pool_mint = pool_mint;
-        self.owner = owner;
+        self.initializer = owner;
         self.state = MarketState::Open.into();
     }
 

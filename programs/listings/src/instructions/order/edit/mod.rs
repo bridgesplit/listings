@@ -20,6 +20,7 @@ impl EditSide {
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub struct EditOrderData {
     pub side: u8,
+    pub size: u64,
     pub price: u64,
 }
 

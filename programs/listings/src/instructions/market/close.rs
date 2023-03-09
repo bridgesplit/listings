@@ -9,9 +9,8 @@ pub struct CloseMarket<'info> {
     pub initializer: Signer<'info>,
     #[account(
         mut,
-        constraint = market.owner == initializer.key(),
+        constraint = market.initializer == initializer.key(),
         seeds = [MARKET_SEED.as_ref(),
-        market.owner.as_ref(),
         market.pool_mint.as_ref()],
         bump,
     )]

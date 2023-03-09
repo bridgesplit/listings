@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{state::*, utils::transfer_sol};
+use crate::{instructions::order::edit::EditSide, state::*};
 
 use super::InitOrderData;
 
@@ -10,9 +10,17 @@ pub struct InitBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        mut,
+        // make sure bidding wallet has enough balance to place the order
+        constraint = Wallet::validate(wallet.balance, data.price * data.size, EditSide::Increase.into()),
+        seeds = [WALLET_SEED.as_ref(),
+        initializer.key().as_ref()],
+        bump,
+    )]
+    pub wallet: Box<Account<'info, Wallet>>,
+    #[account(
         constraint = Market::is_active(market.state),
         seeds = [MARKET_SEED.as_ref(),
-        market.owner.as_ref(),
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -40,18 +48,18 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         &mut ctx.accounts.order,
         ctx.accounts.market.key(),
         ctx.accounts.initializer.key(),
+        ctx.accounts.wallet.key(),
         OrderSide::Buy.into(),
-        1,
+        data.size,
         data.price,
         OrderState::Ready.into(),
     );
 
-    // transfer the buy amount sol to the order account
-    transfer_sol(
-        ctx.accounts.market.to_account_info(),
-        ctx.accounts.order.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        data.price,
-    )?;
+    // increase wallet active bids
+    Wallet::edit_active_bids(
+        &mut ctx.accounts.wallet,
+        data.size,
+        EditSide::Increase.into(),
+    );
     Ok(())
 }

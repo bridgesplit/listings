@@ -16,6 +16,8 @@ pub struct Order {
     pub market: Pubkey,
     /// owner of the order account
     pub owner: Pubkey,
+    /// bidding wallet of the owner
+    pub wallet: Pubkey,
     /// type of order - buy/sell
     pub side: u8,
     /// number of bids order is making
@@ -52,10 +54,12 @@ pub enum OrderState {
 
 impl Order {
     /// initialize a new order account
+    #[allow(clippy::too_many_arguments)]
     pub fn init(
         &mut self,
         market: Pubkey,
         owner: Pubkey,
+        wallet: Pubkey,
         side: u8,
         size: u64,
         price: u64,
@@ -64,6 +68,7 @@ impl Order {
         self.version = ORDER_VERSION;
         self.market = market;
         self.owner = owner;
+        self.wallet = wallet;
         self.side = side;
         self.size = size;
         self.price = price;
@@ -78,8 +83,8 @@ impl Order {
     /// edit an order account
     /// if size is 0, order is closed
     /// any size change is considered partial
-    pub fn edit(&mut self, price: u64, edit_side: u8) {
-        let size = Self::edit_size(self.size, edit_side);
+    pub fn edit(&mut self, price: u64, edit_size: u64, edit_side: u8) {
+        let size = Self::edit_size(self.size, edit_size, edit_side);
         self.size = size;
         self.price = price;
         // mark order as partial if size is less than original size and closed if size is 0
@@ -91,12 +96,13 @@ impl Order {
     }
 
     /// fetch the new size of the order account after an edit
-    pub fn edit_size(current_size: u64, edit_side: u8) -> u64 {
+    /// edit_size is the number of bids to be added or removed
+    pub fn edit_size(current_size: u64, edit_size: u64, edit_side: u8) -> u64 {
         let mut size = current_size;
         if EditSide::is_increase(edit_side) {
-            size += 1;
+            size += edit_size;
         } else {
-            size -= 1;
+            size -= edit_size;
         }
         size
     }

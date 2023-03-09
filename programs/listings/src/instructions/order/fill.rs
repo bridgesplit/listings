@@ -24,13 +24,19 @@ pub struct FillOrder<'info> {
     #[account()]
     /// CHECK: constraint check
     pub buyer: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [WALLET_SEED.as_ref(),
+        buyer.key().as_ref()],
+        bump,
+    )]
+    pub buyer_wallet: Box<Account<'info, Wallet>>,
     #[account()]
     /// CHECK: constraint check
     pub seller: UncheckedAccount<'info>,
     #[account(
         constraint = Market::is_active(market.state),
         seeds = [MARKET_SEED.as_ref(),
-        market.owner.as_ref(),
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -101,7 +107,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Resu
             return Err(SpecificErrorCode::WrongAccount.into());
         }
         nft_authority = ctx.accounts.seller.to_account_info();
-        sol_holder = ctx.accounts.order.to_account_info();
+        sol_holder = ctx.accounts.buyer_wallet.to_account_info();
+
+        // edit wallet account to decrease balance and active bids
+        Wallet::edit_active_bids(&mut ctx.accounts.buyer_wallet, 1, EditSide::Decrease.into());
+        Wallet::edit_balance(
+            &mut ctx.accounts.buyer_wallet,
+            ctx.accounts.order.price,
+            EditSide::Decrease.into(),
+        );
     } else {
         // Initializer is buyer and buying an nft to fill a sell order
         // transfer nft from order account to buyer
@@ -156,7 +170,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillOrder<'info>>) -> Resu
 
     // edit order
     let price = ctx.accounts.order.price;
-    Order::edit(&mut ctx.accounts.order, price, EditSide::Decrease.into());
+    Order::edit(&mut ctx.accounts.order, price, 1, EditSide::Decrease.into());
 
     Ok(())
 }

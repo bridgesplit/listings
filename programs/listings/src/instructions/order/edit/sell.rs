@@ -19,9 +19,16 @@ pub struct EditSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        mut,
+        constraint = Wallet::validate(wallet.balance, data.price, data.side),
+        seeds = [WALLET_SEED.as_ref(),
+        initializer.key().as_ref()],
+        bump,
+    )]
+    pub wallet: Box<Account<'info, Wallet>>,
+    #[account(
         constraint = Order::validate_edit_side(data.side, market.state),
         seeds = [MARKET_SEED.as_ref(),
-        market.owner.as_ref(),
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -73,7 +80,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     ][..]];
 
     // update the sell order account
-    Order::edit(&mut ctx.accounts.order, data.price, data.side);
+    Order::edit(&mut ctx.accounts.order, data.price, 1, data.side);
 
     // freeze the nft of the seller with the order account as the authority if edit side is increase and vice versa
     if EditSide::is_increase(data.side) {
@@ -98,5 +105,8 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
             signer_seeds,
         )?;
     }
+
+    // edit active bids in wallet account
+    Wallet::edit_active_bids(&mut ctx.accounts.wallet, 1, data.side);
     Ok(())
 }

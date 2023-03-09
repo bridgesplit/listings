@@ -13,7 +13,6 @@ pub struct InitMarket<'info> {
     #[account(
         init,
         seeds = [MARKET_SEED.as_ref(),
-        initializer.key().as_ref(),
         pool_mint.key().as_ref()],
         bump,
         payer = initializer,
