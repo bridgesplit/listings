@@ -37,13 +37,20 @@ pub struct EditBuyOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     pub system_program: Program<'info, System>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult {
     msg!("Edit buy order");
 
     // edit the order with size
-    Order::edit(&mut ctx.accounts.order, data.price, data.size, data.side);
+    Order::edit(
+        &mut ctx.accounts.order,
+        data.price,
+        data.size,
+        data.side,
+        ctx.accounts.clock.unix_timestamp,
+    );
 
     // edit wallet active bids
     Wallet::edit(&mut ctx.accounts.wallet, 0, data.size, data.side);

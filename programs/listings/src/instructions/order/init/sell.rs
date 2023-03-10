@@ -66,6 +66,7 @@ pub struct InitSellOrder<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResult {
@@ -78,6 +79,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
         data.nonce,
+        ctx.accounts.clock.unix_timestamp,
         OrderSide::Sell.into(),
         1,
         data.price,

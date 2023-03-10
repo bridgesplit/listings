@@ -37,6 +37,7 @@ pub struct InitBuyOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     pub system_program: Program<'info, System>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
@@ -49,6 +50,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
         data.nonce,
+        ctx.accounts.clock.unix_timestamp,
         OrderSide::Buy.into(),
         data.size,
         data.price,

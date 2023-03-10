@@ -26,6 +26,10 @@ pub struct Order {
     pub price: u64,
     /// order state - ready/partial/closed
     pub state: u8,
+    /// order account creation time
+    pub init_time: i64,
+    /// last time the order was edited
+    pub last_edit_time: i64,
     /// reserved space for future changes
     reserve: [u8; 512],
 }
@@ -61,6 +65,7 @@ impl Order {
         owner: Pubkey,
         wallet: Pubkey,
         nonce: Pubkey,
+        time: i64,
         side: u8,
         size: u64,
         price: u64,
@@ -75,6 +80,8 @@ impl Order {
         self.size = size;
         self.price = price;
         self.state = state;
+        self.init_time = time;
+        self.last_edit_time = time;
     }
 
     /// check if a buy order being filled has a higher price than the sell order
@@ -85,10 +92,11 @@ impl Order {
     /// edit an order account
     /// if size is 0, order is closed
     /// any size change is considered partial
-    pub fn edit(&mut self, price: u64, edit_size: u64, edit_side: u8) {
+    pub fn edit(&mut self, price: u64, edit_size: u64, edit_side: u8, time: i64) {
         let size = Self::edit_size(self.size, edit_size, edit_side);
         self.size = size;
         self.price = price;
+        self.last_edit_time = time;
         // mark order as partial if size is less than original size and closed if size is 0
         if size != 0 {
             self.state = OrderState::Partial.into();

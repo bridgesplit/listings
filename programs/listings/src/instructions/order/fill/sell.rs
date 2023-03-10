@@ -82,6 +82,7 @@ pub struct FillSellOrder<'info> {
     pub instructions_program: UncheckedAccount<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 /// Initializer is the buyer and is buying an nft from the seller
@@ -152,7 +153,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
 
     // edit order
     let price = ctx.accounts.order.price;
-    Order::edit(&mut ctx.accounts.order, price, 1, EditSide::Decrease.into());
+    Order::edit(
+        &mut ctx.accounts.order,
+        price,
+        1,
+        EditSide::Decrease.into(),
+        ctx.accounts.clock.unix_timestamp,
+    );
 
     // close the tracker account
     ctx.accounts

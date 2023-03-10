@@ -73,6 +73,7 @@ pub struct EditSellOrder<'info> {
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResult {
@@ -85,7 +86,13 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     let signer_seeds = &[&[WALLET_SEED.as_ref(), order.owner.as_ref(), bump][..]];
 
     // update the sell order account
-    Order::edit(&mut ctx.accounts.order, data.price, 1, data.side);
+    Order::edit(
+        &mut ctx.accounts.order,
+        data.price,
+        1,
+        data.side,
+        ctx.accounts.clock.unix_timestamp,
+    );
 
     // freeze the nft of the seller with the bidding wallet account as the authority if edit side is increase and vice versa
     if EditSide::is_increase(data.side) {
