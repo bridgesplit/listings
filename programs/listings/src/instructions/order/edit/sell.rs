@@ -37,6 +37,7 @@ pub struct EditSellOrder<'info> {
         mut,
         constraint = order.market == market.key(),
         constraint = order.owner == initializer.key(),
+        constraint = data.price > 0 && data.size > 0,
         // cannot increase size of order if it is already filled/cancelled
         constraint = Order::validate_edit_side(data.side, order.state),
         seeds = [ORDER_SEED.as_ref(),

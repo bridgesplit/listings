@@ -26,6 +26,7 @@ pub struct InitBuyOrder<'info> {
     )]
     pub market: Box<Account<'info, Market>>,
     #[account(
+        constraint = data.price > 0 && data.size > 0,
         init,
         seeds = [ORDER_SEED.as_ref(),
         data.nonce.as_ref(),
