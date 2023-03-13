@@ -12,7 +12,10 @@ use vault::{
 use crate::{
     instructions::order::edit::EditSide,
     state::*,
-    utils::{transfer_nft, transfer_sol, unfreeze_nft},
+    utils::{
+        print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_nft, transfer_sol,
+        unfreeze_nft,
+    },
 };
 
 #[derive(Accounts)]
@@ -165,6 +168,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     ctx.accounts
         .tracker
         .close(ctx.accounts.seller.to_account_info())?;
+
+    msg!("Closed tracker account: {:?}", ctx.accounts.tracker.key());
+
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
 
     Ok(())
 }

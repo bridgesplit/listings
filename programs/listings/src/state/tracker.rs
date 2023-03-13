@@ -1,3 +1,5 @@
+use std::fmt::{self, Debug, Formatter};
+
 use anchor_lang::prelude::*;
 
 pub const TRACKER_VERSION: u8 = 1;
@@ -24,5 +26,19 @@ impl Tracker {
         self.market = market;
         self.order = order;
         self.nft_mint = nft_mint;
+    }
+}
+
+impl Debug for Tracker {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{{ version: {},
+                market: {},
+                order: {},
+                nft_mint: {},
+                reserve: {:?} }}",
+            self.version, self.market, self.order, self.nft_mint, self.reserve
+        )
     }
 }

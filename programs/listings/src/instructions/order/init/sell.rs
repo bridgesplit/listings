@@ -5,7 +5,11 @@ use vault::{
     utils::{get_bump_in_seed_form, MplTokenMetadata},
 };
 
-use crate::{instructions::order::edit::EditSide, state::*, utils::freeze_nft};
+use crate::{
+    instructions::order::edit::EditSide,
+    state::*,
+    utils::{freeze_nft, print_webhook_logs_for_order, print_webhook_logs_for_wallet, print_webhook_logs_for_tracker},
+};
 
 use super::InitOrderData;
 
@@ -116,5 +120,10 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
     )?;
 
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Increase.into());
+
+    // log for webhook calcs
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_tracker(&mut ctx.accounts.tracker)?;
     Ok(())
 }

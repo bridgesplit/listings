@@ -1,3 +1,5 @@
+use std::fmt::{self, Debug, Formatter};
+
 use anchor_lang::prelude::*;
 use num_enum::IntoPrimitive;
 
@@ -128,5 +130,35 @@ impl Order {
     /// return true if the order is active
     pub fn is_active(state: u8) -> bool {
         state != <OrderState as Into<u8>>::into(OrderState::Closed)
+    }
+}
+
+impl Debug for Order {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{{ version: {},
+            nonce: {},
+            market: {},
+            owner: {},
+            wallet: {},
+            side: {},
+            size: {},
+            price: {},
+            state: {},
+            init_time: {},
+            last_edit_time: {} }}",
+            self.version,
+            self.nonce,
+            self.market,
+            self.owner,
+            self.wallet,
+            self.side,
+            self.size,
+            self.price,
+            self.state,
+            self.init_time,
+            self.last_edit_time,
+        )
     }
 }

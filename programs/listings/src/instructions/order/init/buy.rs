@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{instructions::order::edit::EditSide, state::*};
+use crate::{instructions::order::edit::EditSide, state::*, utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet}};
 
 use super::InitOrderData;
 
@@ -42,7 +42,7 @@ pub struct InitBuyOrder<'info> {
 }
 
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
-    msg!("Initialize a new buy order");
+    msg!("Initialize a new listings buy order");
 
     // create a new order with size 1
     Order::init(
@@ -65,5 +65,8 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         data.size,
         EditSide::Increase.into(),
     );
+
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
     Ok(())
 }

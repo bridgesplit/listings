@@ -1,6 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::state::*;
+use crate::{
+    state::*,
+    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet},
+};
 
 use super::EditOrderData;
 
@@ -42,8 +45,6 @@ pub struct EditBuyOrder<'info> {
 }
 
 pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult {
-    msg!("Edit buy order");
-
     // edit the order with size
     Order::edit(
         &mut ctx.accounts.order,
@@ -53,7 +54,11 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult
         ctx.accounts.clock.unix_timestamp,
     );
 
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+
     // edit wallet active bids
     Wallet::edit(&mut ctx.accounts.wallet, 0, data.size, data.side);
+
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
     Ok(())
 }

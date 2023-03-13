@@ -6,7 +6,11 @@ use anchor_spl::{
 };
 use vault::utils::{get_bump_in_seed_form, lamport_transfer, MplTokenMetadata};
 
-use crate::{instructions::order::edit::EditSide, state::*, utils::transfer_nft};
+use crate::{
+    instructions::order::edit::EditSide,
+    state::*,
+    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_nft},
+};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -129,6 +133,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         EditSide::Decrease.into(),
         ctx.accounts.clock.unix_timestamp,
     );
+
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
 
     Ok(())
 }

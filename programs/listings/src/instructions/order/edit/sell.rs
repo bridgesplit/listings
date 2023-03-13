@@ -8,7 +8,9 @@ use vault::{
 use crate::{
     instructions::order::edit::EditSide,
     state::*,
-    utils::{freeze_nft, unfreeze_nft},
+    utils::{
+        freeze_nft, print_webhook_logs_for_order, print_webhook_logs_for_wallet, unfreeze_nft,
+    },
 };
 
 use super::EditOrderData;
@@ -78,8 +80,6 @@ pub struct EditSellOrder<'info> {
 }
 
 pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResult {
-    msg!("Edit sell order");
-
     let bump = &get_bump_in_seed_form(ctx.bumps.get("order").unwrap());
 
     let order = ctx.accounts.order.clone();
@@ -120,6 +120,9 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
         ctx.accounts
             .tracker
             .close(ctx.accounts.initializer.to_account_info())?;
+
+        msg!("Closed tracker account: {:?}", ctx.accounts.tracker.key());
+        
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
             ctx.accounts.nft_edition.to_account_info(),
@@ -131,7 +134,11 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
         )?;
     }
 
+    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+
     // edit active bids in wallet account
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, data.side);
+
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
     Ok(())
 }

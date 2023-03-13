@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use vault::utils::{get_bump_in_seed_form, lamport_transfer};
 
-use crate::{instructions::order::edit::EditSide, state::*, utils::transfer_sol};
+use crate::{instructions::order::edit::EditSide, state::*, utils::{transfer_sol, print_webhook_logs_for_wallet}};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -19,7 +19,7 @@ pub struct EditBiddingWallet<'info> {
 }
 
 pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> ProgramResult {
-    msg!("Editing sol balancer of the bidding wallet account");
+    msg!("Editing sol balance of the listings bidding wallet account");
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
@@ -48,6 +48,8 @@ pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> P
             amount,
         )?;
     }
+
+    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
 
     Ok(())
 }

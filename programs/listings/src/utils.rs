@@ -1,9 +1,9 @@
 use anchor_lang::{
-    prelude::{AccountInfo, CpiContext},
+    prelude::{msg, Account, AccountInfo, CpiContext},
     solana_program::{
         entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
     },
-    AnchorDeserialize, ToAccountInfo,
+    AnchorDeserialize, Key, ToAccountInfo,
 };
 use anchor_mpl_token_metadata::transfer::{metaplex_transfer, MetaplexTransfer, TransferParams};
 use anchor_spl::token::{self, Approve, Transfer};
@@ -12,6 +12,8 @@ use mpl_token_metadata::{
     state::{Metadata, TokenStandard},
 };
 use vault::utils::get_metaplex_transfer_params;
+
+use crate::state::{Order, Tracker, Wallet};
 
 fn create_freeze_nft_account_infos<'info>(
     nft_mint: AccountInfo<'info>,
@@ -247,4 +249,40 @@ pub fn transfer_sol<'info>(
         signer_seeds,
     )
     .map_err(Into::into)
+}
+
+pub fn print_webhook_logs_for_order<'info>(
+    order: &mut Box<Account<'info, Order>>,
+) -> ProgramResult {
+    order.reload()?;
+    msg!(
+        "Edit order account: &{:?}&, new order data is: &{:?}",
+        order.key(),
+        order,
+    );
+    Ok(())
+}
+
+pub fn print_webhook_logs_for_wallet<'info>(
+    wallet: &mut Box<Account<'info, Wallet>>,
+) -> ProgramResult {
+    wallet.reload()?;
+    msg!(
+        "Edit wallet account: &{:?}&, new wallet data is: &{:?}",
+        wallet.key(),
+        wallet,
+    );
+    Ok(())
+}
+
+pub fn print_webhook_logs_for_tracker<'info>(
+    tracker: &mut Box<Account<'info, Tracker>>,
+) -> ProgramResult {
+    tracker.reload()?;
+    msg!(
+        "Edit tracker account: &{:?}&, new tracker data is: &{:?}",
+        tracker.key(),
+        tracker,
+    );
+    Ok(())
 }
