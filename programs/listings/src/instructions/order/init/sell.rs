@@ -107,6 +107,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         &mut ctx.accounts.tracker,
         ctx.accounts.market.key(),
         ctx.accounts.order.key(),
+        ctx.accounts.initializer.key(),
         ctx.accounts.nft_mint.key(),
     );
 

@@ -11,6 +11,8 @@ pub struct Tracker {
     pub market: Pubkey,
     /// order account
     pub order: Pubkey,
+    /// owner account
+    pub owner: Pubkey,
     /// mint of the nft held in the order
     pub nft_mint: Pubkey,
     /// reserved space for future changes
@@ -19,10 +21,11 @@ pub struct Tracker {
 
 impl Tracker {
     /// initialize a new order account
-    pub fn init(&mut self, market: Pubkey, order: Pubkey, nft_mint: Pubkey) {
+    pub fn init(&mut self, market: Pubkey, order: Pubkey, owner: Pubkey, nft_mint: Pubkey) {
         self.version = TRACKER_VERSION;
         self.market = market;
         self.order = order;
+        self.owner = owner;
         self.nft_mint = nft_mint;
     }
 }
