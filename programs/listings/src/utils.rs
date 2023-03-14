@@ -251,38 +251,57 @@ pub fn transfer_sol<'info>(
     .map_err(Into::into)
 }
 
-pub fn print_webhook_logs_for_order<'info>(
-    order: &mut Box<Account<'info, Order>>,
+// !! DO NOT EDIT THE FOLLOWING CODE !! //
+
+pub fn print_webhook_logs_for_order(
+    order: Box<Account<'_, Order>>,
+    wallet: Box<Account<'_, Wallet>>,
 ) -> ProgramResult {
-    order.reload()?;
     msg!(
-        "Edit order account: &{:?}&, new order data is: &{:?}",
+        "Edit order account: &{:?}&, new order data is: &{{\"version\": {}, \"nonce\": \"{}\", \"market\": \"{}\", \"owner\": \"{}\", \"wallet\": {{\"version\": {}, \"owner\": \"{}\", \"balance\": {}, \"activeBids\": {}, \"address\": \"{}\"}}, \"side\": {}, \"size\": {}, \"price\": {}, \"state\": {}, \"initTime\": {}, \"lastEditTime\": {}, \"address\": \"{}\"}}",
         order.key(),
-        order,
-    );
-    Ok(())
-}
-
-pub fn print_webhook_logs_for_wallet<'info>(
-    wallet: &mut Box<Account<'info, Wallet>>,
-) -> ProgramResult {
-    wallet.reload()?;
-    msg!(
-        "Edit wallet account: &{:?}&, new wallet data is: &{:?}",
+        order.version,
+        order.nonce,
+        order.market,
+        order.owner,
+        wallet.version,
+        wallet.owner,
+        wallet.balance,
+        wallet.active_bids,
         wallet.key(),
-        wallet,
+        order.side,
+        order.size,
+        order.price,
+        order.state,
+        order.init_time,
+        order.last_edit_time,
+        order.key(),
     );
     Ok(())
 }
 
-pub fn print_webhook_logs_for_tracker<'info>(
-    tracker: &mut Box<Account<'info, Tracker>>,
-) -> ProgramResult {
-    tracker.reload()?;
+pub fn print_webhook_logs_for_wallet(wallet: Box<Account<'_, Wallet>>) -> ProgramResult {
     msg!(
-        "Edit tracker account: &{:?}&, new tracker data is: &{:?}",
+        "Edit wallet account: &{:?}&, new wallet data is: &{{\"version\": {}, \"owner\": \"{}\", \"balance\": {}, \"activeBids\": {}, \"address\": \"{}\"}}",
+        wallet.key(),
+        wallet.version,
+        wallet.owner,
+        wallet.balance,
+        wallet.active_bids,
+        wallet.key(),
+    );
+    Ok(())
+}
+
+pub fn print_webhook_logs_for_tracker(tracker: Box<Account<'_, Tracker>>) -> ProgramResult {
+    msg!(
+        "Edit tracker account: &{:?}&, new tracker data is: {{\"version\": {}, \"market\": \"{}\", \"order\": \"{}\", \"nftMint\": \"{}\", \"address\": \"{}\"}}",
         tracker.key(),
-        tracker,
+        tracker.version,
+        tracker.market,
+        tracker.order,
+        tracker.nft_mint,
+        tracker.key(),
     );
     Ok(())
 }

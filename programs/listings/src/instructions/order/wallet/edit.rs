@@ -1,7 +1,11 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use vault::utils::{get_bump_in_seed_form, lamport_transfer};
 
-use crate::{instructions::order::edit::EditSide, state::*, utils::{transfer_sol, print_webhook_logs_for_wallet}};
+use crate::{
+    instructions::order::edit::EditSide,
+    state::*,
+    utils::{print_webhook_logs_for_wallet, transfer_sol},
+};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -49,7 +53,7 @@ pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> P
         )?;
     }
 
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
 
     Ok(())
 }

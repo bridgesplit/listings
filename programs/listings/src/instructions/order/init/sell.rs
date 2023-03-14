@@ -8,7 +8,10 @@ use vault::{
 use crate::{
     instructions::order::edit::EditSide,
     state::*,
-    utils::{freeze_nft, print_webhook_logs_for_order, print_webhook_logs_for_wallet, print_webhook_logs_for_tracker},
+    utils::{
+        freeze_nft, print_webhook_logs_for_order, print_webhook_logs_for_tracker,
+        print_webhook_logs_for_wallet,
+    },
 };
 
 use super::InitOrderData;
@@ -122,8 +125,8 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Increase.into());
 
     // log for webhook calcs
-    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
-    print_webhook_logs_for_tracker(&mut ctx.accounts.tracker)?;
+    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
+    print_webhook_logs_for_tracker(ctx.accounts.tracker.clone())?;
     Ok(())
 }

@@ -134,8 +134,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.clock.unix_timestamp,
     );
 
-    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
 
     Ok(())
 }

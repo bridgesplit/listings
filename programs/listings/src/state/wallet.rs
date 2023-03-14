@@ -1,5 +1,3 @@
-use std::fmt::{self, Debug, Formatter};
-
 use anchor_lang::prelude::*;
 
 use crate::instructions::order::EditSide;
@@ -51,18 +49,5 @@ impl Wallet {
             return false;
         }
         true
-    }
-}
-
-impl Debug for Wallet {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{{ version: {},
-            owner: {},
-            balance: {},
-            active_bids: {} }}",
-            self.version, self.owner, self.balance, self.active_bids,
-        )
     }
 }

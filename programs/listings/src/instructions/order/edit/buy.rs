@@ -54,11 +54,10 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult
         ctx.accounts.clock.unix_timestamp,
     );
 
-    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
-
     // edit wallet active bids
     Wallet::edit(&mut ctx.accounts.wallet, 0, data.size, data.side);
 
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
     Ok(())
 }

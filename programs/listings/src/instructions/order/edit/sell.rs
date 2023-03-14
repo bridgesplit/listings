@@ -80,7 +80,7 @@ pub struct EditSellOrder<'info> {
 }
 
 pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResult {
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("order").unwrap());
+    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let order = ctx.accounts.order.clone();
 
@@ -122,7 +122,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
             .close(ctx.accounts.initializer.to_account_info())?;
 
         msg!("Closed tracker account: {:?}", ctx.accounts.tracker.key());
-        
+
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),
             ctx.accounts.nft_edition.to_account_info(),
@@ -134,11 +134,11 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
         )?;
     }
 
-    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
+    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
 
     // edit active bids in wallet account
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, data.side);
 
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
     Ok(())
 }

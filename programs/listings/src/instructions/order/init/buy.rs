@@ -1,6 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{instructions::order::edit::EditSide, state::*, utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet}};
+use crate::{
+    instructions::order::edit::EditSide,
+    state::*,
+    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet},
+};
 
 use super::InitOrderData;
 
@@ -66,7 +70,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         EditSide::Increase.into(),
     );
 
-    print_webhook_logs_for_order(&mut ctx.accounts.order)?;
-    print_webhook_logs_for_wallet(&mut ctx.accounts.wallet)?;
+    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
+    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
     Ok(())
 }
