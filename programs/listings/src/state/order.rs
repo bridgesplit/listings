@@ -93,7 +93,7 @@ impl Order {
     /// if size is 0, order is closed
     /// any size change is considered partial
     pub fn edit(&mut self, price: u64, edit_size: u64, edit_side: u8, time: i64) {
-        let size = Self::edit_size(self.size, edit_size, edit_side);
+        let size = Self::edit_size(self.size, edit_size, edit_side, self.side);
         self.size = size;
         self.price = price;
         self.last_edit_time = time;
@@ -107,12 +107,17 @@ impl Order {
 
     /// fetch the new size of the order account after an edit
     /// edit_size is the number of bids to be added or removed
-    pub fn edit_size(current_size: u64, edit_size: u64, edit_side: u8) -> u64 {
+    pub fn edit_size(current_size: u64, edit_size: u64, edit_side: u8, side: u8) -> u64 {
         let mut size = current_size;
         if EditSide::is_increase(edit_side) {
             size += edit_size;
+        } else if edit_size > size {
+            size = 0;
         } else {
             size -= edit_size;
+        }
+        if side == <OrderSide as Into<u8>>::into(OrderSide::Sell) && size > 1 {
+            size = 1;
         }
         size
     }

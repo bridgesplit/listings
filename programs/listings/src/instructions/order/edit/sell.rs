@@ -22,7 +22,6 @@ pub struct EditSellOrder<'info> {
     pub initializer: Signer<'info>,
     #[account(
         mut,
-        constraint = Wallet::validate(wallet.balance, data.price, data.side),
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,
@@ -39,7 +38,7 @@ pub struct EditSellOrder<'info> {
         mut,
         constraint = order.market == market.key(),
         constraint = order.owner == initializer.key(),
-        constraint = data.price > 0 && data.size > 0,
+        constraint = data.price > 0,
         // cannot increase size of order if it is already filled/cancelled
         constraint = Order::validate_edit_side(data.side, order.state),
         seeds = [ORDER_SEED.as_ref(),
@@ -90,7 +89,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
     Order::edit(
         &mut ctx.accounts.order,
         data.price,
-        1,
+        data.size,
         data.side,
         ctx.accounts.clock.unix_timestamp,
     );

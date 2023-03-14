@@ -22,7 +22,7 @@ pub struct EditBuyOrder<'info> {
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Order::validate_edit_side(data.side, market.state),
-        constraint = data.price > 0 && data.size > 0,
+        constraint = data.price > 0,
         seeds = [MARKET_SEED.as_ref(),
         market.pool_mint.as_ref()],
         bump,
