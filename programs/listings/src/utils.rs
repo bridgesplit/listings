@@ -295,7 +295,7 @@ pub fn print_webhook_logs_for_wallet(wallet: Box<Account<'_, Wallet>>) -> Progra
 
 pub fn print_webhook_logs_for_tracker(tracker: Box<Account<'_, Tracker>>) -> ProgramResult {
     msg!(
-        "Edit tracker account: &{:?}&, new tracker data is: &{{\"version\": {}, \"market\": \"{}\", \"order\": \"{}\", \"owner\": \"{}\", \"nftMint\": \"{}\", \"address\": \"{}\"}}",
+        "Edit tracker account: &{:?}&, new tracker data is: &{{\"version\": {}, \"market\": \"{}\", \"order\": \"{}\", \"owner\": \"{}\", \"nftMint\": \"{}\", \"address\": \"{}\", \"nftMetadata\": null}}",
         tracker.key(),
         tracker.version,
         tracker.market,

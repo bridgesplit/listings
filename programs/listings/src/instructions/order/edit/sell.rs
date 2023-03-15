@@ -121,7 +121,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
             .tracker
             .close(ctx.accounts.initializer.to_account_info())?;
 
-        msg!("Closed tracker account: {:?}", ctx.accounts.tracker.key());
+        msg!("Closed tracker account: &{:?}&", ctx.accounts.tracker.key());
 
         unfreeze_nft(
             ctx.accounts.nft_mint.to_account_info(),

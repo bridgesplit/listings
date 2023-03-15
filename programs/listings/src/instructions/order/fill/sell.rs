@@ -169,7 +169,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         .tracker
         .close(ctx.accounts.seller.to_account_info())?;
 
-    msg!("Closed tracker account: {:?}", ctx.accounts.tracker.key());
+    msg!("Closed tracker account: &{:?}&", ctx.accounts.tracker.key());
 
     print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
     print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
