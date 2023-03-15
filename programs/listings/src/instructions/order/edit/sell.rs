@@ -94,46 +94,47 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResul
         ctx.accounts.clock.unix_timestamp,
     );
 
-    // freeze the nft of the seller with the bidding wallet account as the authority if edit side is increase and vice versa
-    if EditSide::is_increase(data.side) {
-        // initialize the tracker account
-        Tracker::init(
-            &mut ctx.accounts.tracker,
-            ctx.accounts.market.key(),
-            ctx.accounts.order.key(),
-            ctx.accounts.initializer.key(),
-            ctx.accounts.nft_mint.key(),
-        );
+    if data.size != 0 {
+        // freeze the nft of the seller with the bidding wallet account as the authority if edit side is increase and vice versa
+        if EditSide::is_increase(data.side) {
+            // initialize the tracker account
+            Tracker::init(
+                &mut ctx.accounts.tracker,
+                ctx.accounts.market.key(),
+                ctx.accounts.order.key(),
+                ctx.accounts.initializer.key(),
+                ctx.accounts.nft_mint.key(),
+            );
 
-        freeze_nft(
-            ctx.accounts.nft_mint.to_account_info(),
-            ctx.accounts.nft_edition.to_account_info(),
-            ctx.accounts.nft_ta.to_account_info(),
-            ctx.accounts.wallet.to_account_info(),
-            ctx.accounts.initializer.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.mpl_token_metadata_program.to_account_info(),
-            signer_seeds,
-        )?;
-    } else {
-        // close the tracker account
-        ctx.accounts
-            .tracker
-            .close(ctx.accounts.initializer.to_account_info())?;
+            freeze_nft(
+                ctx.accounts.nft_mint.to_account_info(),
+                ctx.accounts.nft_edition.to_account_info(),
+                ctx.accounts.nft_ta.to_account_info(),
+                ctx.accounts.wallet.to_account_info(),
+                ctx.accounts.initializer.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.mpl_token_metadata_program.to_account_info(),
+                signer_seeds,
+            )?;
+        } else {
+            // close the tracker account
+            ctx.accounts
+                .tracker
+                .close(ctx.accounts.initializer.to_account_info())?;
 
-        msg!("Closed tracker account: &{:?}&", ctx.accounts.tracker.key());
+            msg!("Closed tracker account: &{:?}&", ctx.accounts.tracker.key());
 
-        unfreeze_nft(
-            ctx.accounts.nft_mint.to_account_info(),
-            ctx.accounts.nft_edition.to_account_info(),
-            ctx.accounts.nft_ta.to_account_info(),
-            ctx.accounts.wallet.to_account_info(),
-            ctx.accounts.token_program.to_account_info(),
-            ctx.accounts.mpl_token_metadata_program.to_account_info(),
-            signer_seeds,
-        )?;
+            unfreeze_nft(
+                ctx.accounts.nft_mint.to_account_info(),
+                ctx.accounts.nft_edition.to_account_info(),
+                ctx.accounts.nft_ta.to_account_info(),
+                ctx.accounts.wallet.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.mpl_token_metadata_program.to_account_info(),
+                signer_seeds,
+            )?;
+        }
     }
-
     print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
 
     // edit active bids in wallet account
