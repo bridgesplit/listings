@@ -33,7 +33,11 @@ pub mod listings {
     }
 
     /// initializer a new listing
-    pub fn init_sell_order<'info>(ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>, order_data: InitOrderData, authorization_data: Option<AuthorizationDataLocal>) -> ProgramResult {
+    pub fn init_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
+        order_data: InitOrderData,
+        authorization_data: Option<AuthorizationDataLocal>,
+    ) -> ProgramResult {
         instructions::order::init::sell::handler(ctx, order_data, authorization_data)
     }
 
@@ -43,14 +47,18 @@ pub mod listings {
     }
 
     /// edit a listing
-    pub fn edit_sell_order<'info>(ctx: Context<'_, '_, '_,'info, EditSellOrder<'info>>, order_data: EditOrderData, authorization_data: Option<AuthorizationDataLocal>) -> ProgramResult {
+    pub fn edit_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, EditSellOrder<'info>>,
+        order_data: EditOrderData,
+        authorization_data: Option<AuthorizationDataLocal>,
+    ) -> ProgramResult {
         instructions::order::edit::sell::handler(ctx, order_data, authorization_data)
     }
 
     /// fill a bid
     pub fn fill_buy_order<'info>(
         ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>,
-        authorization_data: Option<AuthorizationDataLocal>
+        authorization_data: Option<AuthorizationDataLocal>,
     ) -> Result<()> {
         instructions::order::fill::buy::handler(ctx, authorization_data)
     }
@@ -58,7 +66,7 @@ pub mod listings {
     /// fill a listing
     pub fn fill_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,
-        authorization_data: Option<AuthorizationDataLocal>
+        authorization_data: Option<AuthorizationDataLocal>,
     ) -> Result<()> {
         instructions::order::fill::sell::handler(ctx, authorization_data)
     }

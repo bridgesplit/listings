@@ -3,7 +3,11 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{ExtraFreezeParams, BridgesplitFreeze, ExtraTransferParams, BridgesplitTransfer, bridgesplit_thaw, bridgesplit_transfer, get_extra_freeze_params, pnft::utils::AuthorizationDataLocal};
+use bridgesplit_program_utils::{
+    bridgesplit_thaw, bridgesplit_transfer, get_extra_freeze_params,
+    pnft::utils::AuthorizationDataLocal, BridgesplitFreeze, BridgesplitTransfer, ExtraFreezeParams,
+    ExtraTransferParams,
+};
 use vault::{
     errors::SpecificErrorCode,
     utils::{get_bump_in_seed_form, MplTokenMetadata},
@@ -12,9 +16,7 @@ use vault::{
 use crate::{
     instructions::order::edit::EditSide,
     state::*,
-    utils::{
-        print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_sol,
-    },
+    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_sol},
 };
 
 #[derive(Accounts)]
@@ -88,16 +90,12 @@ pub struct FillSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-
-impl<'info>FillSellOrder<'info> {
-
-
+impl<'info> FillSellOrder<'info> {
     pub fn execute_bridgesplit_thaw(
-        &self,  
+        &self,
         signer_seeds: &[&[&[u8]]],
-        freeze_params: ExtraFreezeParams<'info>
+        freeze_params: ExtraFreezeParams<'info>,
     ) -> Result<()> {
-    
         let accounts = BridgesplitFreeze {
             authority: self.initializer.to_account_info(),
             payer: self.initializer.to_account_info(),
@@ -111,16 +109,22 @@ impl<'info>FillSellOrder<'info> {
             system_program: self.system_program.to_account_info(),
             instructions: self.instructions_program.to_account_info(),
             token_program: self.token_program.to_account_info(),
-            ata_program: self.associated_token_program.to_account_info()
+            ata_program: self.associated_token_program.to_account_info(),
         };
-    
-        let cpi_ctx = CpiContext::new_with_signer(self.mpl_token_metadata_program.to_account_info(), accounts, signer_seeds);
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            self.mpl_token_metadata_program.to_account_info(),
+            accounts,
+            signer_seeds,
+        );
         bridgesplit_thaw(cpi_ctx, freeze_params)
-    
     }
 
-
-    pub fn execute_bridgesplit_transfer(&self, params: ExtraTransferParams<'info>, amount: u64) -> Result<()> {
+    pub fn execute_bridgesplit_transfer(
+        &self,
+        params: ExtraTransferParams<'info>,
+        amount: u64,
+    ) -> Result<()> {
         let accounts = BridgesplitTransfer {
             authority: self.initializer.to_account_info(),
             payer: self.initializer.to_account_info(),
@@ -134,26 +138,21 @@ impl<'info>FillSellOrder<'info> {
             system_program: self.system_program.to_account_info(),
             instructions: self.instructions_program.to_account_info(),
             token_program: self.token_program.to_account_info(),
-            ata_program: self.associated_token_program.to_account_info()
+            ata_program: self.associated_token_program.to_account_info(),
         };
 
         let cpi_ctx = CpiContext::new(self.mpl_token_metadata_program.to_account_info(), accounts);
         bridgesplit_transfer(cpi_ctx, params, amount)
-
-
-        
-
-
     }
-
-
 }
-
 
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,  authorization_data: Option<AuthorizationDataLocal>) -> Result<()> {
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,
+    authorization_data: Option<AuthorizationDataLocal>,
+) -> Result<()> {
     msg!("Filling order");
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
@@ -171,25 +170,27 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,  au
         return Err(SpecificErrorCode::WrongAccount.into());
     }
 
-    let freeze_params = get_extra_freeze_params(ctx.remaining_accounts.to_vec(), authorization_data);
+    let freeze_params =
+        get_extra_freeze_params(ctx.remaining_accounts.to_vec(), authorization_data);
 
     let transfer_params = ExtraTransferParams {
         owner_token_record: freeze_params.token_record.clone(),
         dest_token_record: ctx.remaining_accounts.get(3).cloned(),
         rules_acc: freeze_params.rules_acc.clone(),
-        authorization_data:freeze_params.authorization_data.clone(),
-        authorization_rules_program: freeze_params.authorization_rules_program.clone()
-
+        authorization_data: freeze_params.authorization_data.clone(),
+        authorization_rules_program: freeze_params.authorization_rules_program.clone(),
     };
 
     // unfreeze nft first so that a transfer can be made
-    ctx.accounts.execute_bridgesplit_thaw(signer_seeds, freeze_params)?;
+    ctx.accounts
+        .execute_bridgesplit_thaw(signer_seeds, freeze_params)?;
 
     // edit wallet account to decrease balance and active bids
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Decrease.into());
 
     // transfer nft
-    ctx.accounts.execute_bridgesplit_transfer(transfer_params, 1)?;
+    ctx.accounts
+        .execute_bridgesplit_transfer(transfer_params, 1)?;
 
     // transfer sol from buyer to seller
     transfer_sol(

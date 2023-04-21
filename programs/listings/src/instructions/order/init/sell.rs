@@ -1,19 +1,27 @@
-use anchor_lang::{prelude::*, solana_program::{entrypoint::ProgramResult, sysvar}};
-use anchor_spl::{token::{Mint, Token, TokenAccount}, associated_token::AssociatedToken};
-use bridgesplit_program_utils::{BridgesplitFreeze, bridgesplit_freeze, ExtraFreezeParams, ExtraDelegateParams, get_extra_delegate_params,  pnft::utils::AuthorizationDataLocal, BridgesplitDelegate, bridgesplit_delegate};
+use anchor_lang::{
+    prelude::*,
+    solana_program::{entrypoint::ProgramResult, sysvar},
+};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{Mint, Token, TokenAccount},
+};
+use bridgesplit_program_utils::{
+    bridgesplit_delegate, bridgesplit_freeze, get_extra_delegate_params,
+    pnft::utils::AuthorizationDataLocal, BridgesplitDelegate, BridgesplitFreeze,
+    ExtraDelegateParams, ExtraFreezeParams,
+};
+use mpl_token_metadata::{instruction::DelegateArgs, processor::AuthorizationData};
 use vault::{
     state::{Appraisal, APPRAISAL_SEED},
     utils::{get_bump_in_seed_form, MplTokenMetadata},
 };
-use mpl_token_metadata::{processor::{AuthorizationData}, instruction::DelegateArgs};
-
 
 use crate::{
     instructions::order::edit::EditSide,
     state::*,
     utils::{
-        print_webhook_logs_for_order, print_webhook_logs_for_tracker,
-        print_webhook_logs_for_wallet,
+        print_webhook_logs_for_order, print_webhook_logs_for_tracker, print_webhook_logs_for_wallet,
     },
 };
 
@@ -86,14 +94,12 @@ pub struct InitSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-
-impl<'info>InitSellOrder<'info> {
-
+impl<'info> InitSellOrder<'info> {
     pub fn execute_bridgesplit_delegate(
-        &self,  
+        &self,
         delegate_params: ExtraDelegateParams<'info>,
-        amount: u64) -> Result<()> {
-    
+        amount: u64,
+    ) -> Result<()> {
         let accounts = BridgesplitDelegate {
             authority: self.initializer.to_account_info(),
             payer: self.initializer.to_account_info(),
@@ -105,17 +111,16 @@ impl<'info>InitSellOrder<'info> {
             sysvar_instructions: self.instructions_program.to_account_info(),
             token_program: self.token_program.to_account_info(),
         };
-    
+
         let cpi_ctx = CpiContext::new(self.mpl_token_metadata_program.to_account_info(), accounts);
         bridgesplit_delegate(cpi_ctx, delegate_params, amount)
-    
     }
-    
+
     pub fn execute_bridgesplit_freeze(
-        &self,  
-        freeze_params: ExtraFreezeParams<'info>, 
-        signer_seeds: &[&[&[u8]]]) -> Result<()> {
-    
+        &self,
+        freeze_params: ExtraFreezeParams<'info>,
+        signer_seeds: &[&[&[u8]]],
+    ) -> Result<()> {
         let accounts = BridgesplitFreeze {
             authority: self.initializer.to_account_info(),
             payer: self.initializer.to_account_info(),
@@ -129,21 +134,23 @@ impl<'info>InitSellOrder<'info> {
             system_program: self.system_program.to_account_info(),
             instructions: self.instructions_program.to_account_info(),
             token_program: self.token_program.to_account_info(),
-            ata_program: self.ata_program.to_account_info()
+            ata_program: self.ata_program.to_account_info(),
         };
-    
-        let cpi_ctx = CpiContext::new_with_signer(self.mpl_token_metadata_program.to_account_info(), accounts, signer_seeds);
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            self.mpl_token_metadata_program.to_account_info(),
+            accounts,
+            signer_seeds,
+        );
         bridgesplit_freeze(cpi_ctx, freeze_params)
-    
     }
-
-
-
-
-
 }
 
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>, data: InitOrderData, authorization_data: Option<AuthorizationDataLocal>) -> ProgramResult {
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
+    data: InitOrderData,
+    authorization_data: Option<AuthorizationDataLocal>,
+) -> ProgramResult {
     msg!("Initialize a new sell order");
 
     // create a new order with size 1
@@ -182,14 +189,26 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>, dat
     } else {
         None
     };
-    
 
-    let delegate_params:ExtraDelegateParams<'info> = get_extra_delegate_params(ctx.remaining_accounts.to_vec(), DelegateArgs::UtilityV1 { amount: 1, authorization_data: authorization_data_mplx });
-    let freeze_params = ExtraFreezeParams { token_record: delegate_params.token_record.clone(), rules_acc: delegate_params.authorization_rules.clone(), authorization_data: authorization_data, authorization_rules_program: delegate_params.authorization_rules_program.clone() };
+    let delegate_params: ExtraDelegateParams<'info> = get_extra_delegate_params(
+        ctx.remaining_accounts.to_vec(),
+        DelegateArgs::UtilityV1 {
+            amount: 1,
+            authorization_data: authorization_data_mplx,
+        },
+    );
+    let freeze_params = ExtraFreezeParams {
+        token_record: delegate_params.token_record.clone(),
+        rules_acc: delegate_params.authorization_rules.clone(),
+        authorization_data,
+        authorization_rules_program: delegate_params.authorization_rules_program.clone(),
+    };
 
-    ctx.accounts.execute_bridgesplit_delegate(delegate_params, 1)?;
+    ctx.accounts
+        .execute_bridgesplit_delegate(delegate_params, 1)?;
 
-    ctx.accounts.execute_bridgesplit_freeze(freeze_params, signer_seeds)?;
+    ctx.accounts
+        .execute_bridgesplit_freeze(freeze_params, signer_seeds)?;
 
     // freeze the nft of the seller with the bidding wallet account as the authority
 
