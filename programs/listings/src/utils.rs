@@ -162,7 +162,7 @@ fn transfer_nft_metaplex<'info>(
         ata_program: associated_token_program.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    metaplex_transfer(cpi_ctx, transfer_params)
+    metaplex_transfer(cpi_ctx, transfer_params, 1)
 }
 
 fn transfer_nft_token<'info>(
