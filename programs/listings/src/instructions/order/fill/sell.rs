@@ -1,9 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::sysvar};
-use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::{ExtraFreezeParams, BridgesplitFreeze, ExtraTransferParams, BridgesplitTransfer, bridgesplit_thaw, bridgesplit_transfer, get_extra_freeze_params, pnft::utils::AuthorizationDataLocal};
 use vault::{
     errors::SpecificErrorCode,
     utils::{get_bump_in_seed_form, MplTokenMetadata},
@@ -13,8 +13,7 @@ use crate::{
     instructions::order::edit::EditSide,
     state::*,
     utils::{
-        print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_nft, transfer_sol,
-        unfreeze_nft,
+        print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_sol,
     },
 };
 
@@ -55,7 +54,8 @@ pub struct FillSellOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     pub nft_mint: Box<Account<'info, Mint>>,
-    pub nft_metadata: Box<Account<'info, Metadata>>,
+    /// CHECK: in cpi
+    pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
@@ -88,10 +88,72 @@ pub struct FillSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+
+impl<'info>FillSellOrder<'info> {
+
+
+    pub fn execute_bridgesplit_thaw(
+        &self,  
+        signer_seeds: &[&[&[u8]]],
+        freeze_params: ExtraFreezeParams<'info>
+    ) -> Result<()> {
+    
+        let accounts = BridgesplitFreeze {
+            authority: self.initializer.to_account_info(),
+            payer: self.initializer.to_account_info(),
+            token_owner: self.initializer.to_account_info(),
+            token: self.seller_nft_ta.to_account_info(),
+            delegate: self.wallet.to_account_info(),
+            mint: self.nft_mint.to_account_info(),
+            metadata: self.nft_metadata.to_account_info(),
+            edition: self.nft_edition.to_account_info(),
+            mpl_token_metadata: self.mpl_token_metadata_program.to_account_info(),
+            system_program: self.system_program.to_account_info(),
+            instructions: self.instructions_program.to_account_info(),
+            token_program: self.token_program.to_account_info(),
+            ata_program: self.associated_token_program.to_account_info()
+        };
+    
+        let cpi_ctx = CpiContext::new_with_signer(self.mpl_token_metadata_program.to_account_info(), accounts, signer_seeds);
+        bridgesplit_thaw(cpi_ctx, freeze_params)
+    
+    }
+
+
+    pub fn execute_bridgesplit_transfer(&self, params: ExtraTransferParams<'info>, amount: u64) -> Result<()> {
+        let accounts = BridgesplitTransfer {
+            authority: self.initializer.to_account_info(),
+            payer: self.initializer.to_account_info(),
+            token_owner: self.initializer.to_account_info(),
+            token: self.seller_nft_ta.to_account_info(),
+            destination_owner: self.initializer.to_account_info(),
+            destination: self.buyer_nft_ta.to_account_info(),
+            mint: self.nft_mint.to_account_info(),
+            metadata: self.nft_metadata.to_account_info(),
+            edition: self.nft_edition.to_account_info(),
+            system_program: self.system_program.to_account_info(),
+            instructions: self.instructions_program.to_account_info(),
+            token_program: self.token_program.to_account_info(),
+            ata_program: self.associated_token_program.to_account_info()
+        };
+
+        let cpi_ctx = CpiContext::new(self.mpl_token_metadata_program.to_account_info(), accounts);
+        bridgesplit_transfer(cpi_ctx, params, amount)
+
+
+        
+
+
+    }
+
+
+}
+
+
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,  authorization_data: Option<AuthorizationDataLocal>) -> Result<()> {
     msg!("Filling order");
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
@@ -102,7 +164,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         bump,
     ][..]];
 
-    let nft_authority = ctx.accounts.wallet.to_account_info();
     let sol_holder = ctx.accounts.initializer.to_account_info();
 
     // validate seller
@@ -110,40 +171,25 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         return Err(SpecificErrorCode::WrongAccount.into());
     }
 
+    let freeze_params = get_extra_freeze_params(ctx.remaining_accounts.to_vec(), authorization_data);
+
+    let transfer_params = ExtraTransferParams {
+        owner_token_record: freeze_params.token_record.clone(),
+        dest_token_record: ctx.remaining_accounts.get(3).cloned(),
+        rules_acc: freeze_params.rules_acc.clone(),
+        authorization_data:freeze_params.authorization_data.clone(),
+        authorization_rules_program: freeze_params.authorization_rules_program.clone()
+
+    };
+
     // unfreeze nft first so that a transfer can be made
-    unfreeze_nft(
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-    )?;
+    ctx.accounts.execute_bridgesplit_thaw(signer_seeds, freeze_params)?;
 
     // edit wallet account to decrease balance and active bids
     Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Decrease.into());
 
-    let remaining_accounts = ctx.remaining_accounts.to_vec();
-
     // transfer nft
-    transfer_nft(
-        nft_authority,
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.buyer_nft_ta.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.instructions_program.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        remaining_accounts,
-        signer_seeds,
-    )?;
+    ctx.accounts.execute_bridgesplit_transfer(transfer_params, 1)?;
 
     // transfer sol from buyer to seller
     transfer_sol(

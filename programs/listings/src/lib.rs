@@ -10,9 +10,11 @@ use instructions::*;
 // tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa - staging program id
 
 declare_id!("tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa");
+use bridgesplit_program_utils::pnft::utils::AuthorizationDataLocal;
 
 #[program]
 pub mod listings {
+
     use super::*;
 
     /// initializer a new market
@@ -31,32 +33,34 @@ pub mod listings {
     }
 
     /// initializer a new listing
-    pub fn init_sell_order(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResult {
-        instructions::order::init::sell::handler(ctx, data)
+    pub fn init_sell_order<'info>(ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>, order_data: InitOrderData, authorization_data: Option<AuthorizationDataLocal>) -> ProgramResult {
+        instructions::order::init::sell::handler(ctx, order_data, authorization_data)
     }
 
     /// edit a bid
-    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult {
-        instructions::order::edit::buy::handler(ctx, data)
+    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, order_data: EditOrderData) -> ProgramResult {
+        instructions::order::edit::buy::handler(ctx, order_data)
     }
 
     /// edit a listing
-    pub fn edit_sell_order(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResult {
-        instructions::order::edit::sell::handler(ctx, data)
+    pub fn edit_sell_order<'info>(ctx: Context<'_, '_, '_,'info, EditSellOrder<'info>>, order_data: EditOrderData, authorization_data: Option<AuthorizationDataLocal>) -> ProgramResult {
+        instructions::order::edit::sell::handler(ctx, order_data, authorization_data)
     }
 
     /// fill a bid
     pub fn fill_buy_order<'info>(
         ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>,
+        authorization_data: Option<AuthorizationDataLocal>
     ) -> Result<()> {
-        instructions::order::fill::buy::handler(ctx)
+        instructions::order::fill::buy::handler(ctx, authorization_data)
     }
 
     /// fill a listing
     pub fn fill_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>,
+        authorization_data: Option<AuthorizationDataLocal>
     ) -> Result<()> {
-        instructions::order::fill::sell::handler(ctx)
+        instructions::order::fill::sell::handler(ctx, authorization_data)
     }
 
     /// cancel a bid/listing
