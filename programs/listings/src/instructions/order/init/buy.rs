@@ -1,10 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{
-    instructions::order::edit::EditSide,
-    state::*,
-    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet},
-};
+use crate::state::*;
 
 use super::InitOrderData;
 
@@ -16,7 +12,7 @@ pub struct InitBuyOrder<'info> {
     #[account(
         mut,
         // make sure bidding wallet has enough balance to place the order
-        constraint = Wallet::validate(wallet.balance, data.price * data.size, EditSide::Increase.into()),
+        constraint = wallet.balance >= data.price * data.size,
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,
@@ -41,6 +37,8 @@ pub struct InitBuyOrder<'info> {
         space = 8 + std::mem::size_of::<Order>()
     )]
     pub order: Box<Account<'info, Order>>,
+    /// CHECK: can be anything
+    pub nft_mint: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
 }
@@ -55,6 +53,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
         data.nonce,
+        ctx.accounts.nft_mint.key(),
         ctx.accounts.clock.unix_timestamp,
         OrderSide::Buy.into(),
         data.size,
@@ -63,14 +62,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
     );
 
     // increase wallet active bids
-    Wallet::edit(
-        &mut ctx.accounts.wallet,
-        0,
-        data.size,
-        EditSide::Increase.into(),
-    );
+    Wallet::edit_bids(&mut ctx.accounts.wallet, true, data.size);
 
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
     Ok(())
 }

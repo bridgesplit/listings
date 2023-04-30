@@ -10,12 +10,8 @@ use vault::{
 };
 
 use crate::{
-    instructions::order::edit::EditSide,
     state::*,
-    utils::{
-        print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_nft, transfer_sol,
-        unfreeze_nft,
-    },
+    utils::{transfer_nft, transfer_sol, unfreeze_nft},
 };
 
 #[derive(Accounts)]
@@ -32,7 +28,7 @@ pub struct FillSellOrder<'info> {
     #[account(
         mut,
         seeds = [WALLET_SEED.as_ref(),
-        order.owner.as_ref()],
+        initializer.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
@@ -52,19 +48,13 @@ pub struct FillSellOrder<'info> {
         order.market.as_ref(),
         order.owner.as_ref()],
         bump,
+        close = seller
     )]
     pub order: Box<Account<'info, Order>>,
     pub nft_mint: Box<Account<'info, Mint>>,
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
-    #[account(
-        mut,
-        seeds = [TRACKER_SEED.as_ref(),
-        nft_mint.key().as_ref()],
-        bump,
-    )]
-    pub tracker: Box<Account<'info, Tracker>>,
     #[account(
         mut,
         associated_token::mint = nft_mint,
@@ -122,7 +112,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     )?;
 
     // edit wallet account to decrease balance and active bids
-    Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Decrease.into());
+    Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
@@ -154,25 +144,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.order.price,
     )?;
 
-    // edit order
-    let price = ctx.accounts.order.price;
-    Order::edit(
-        &mut ctx.accounts.order,
-        price,
-        1,
-        EditSide::Decrease.into(),
-        ctx.accounts.clock.unix_timestamp,
-    );
-
-    // close the tracker account
-    ctx.accounts
-        .tracker
-        .close(ctx.accounts.seller.to_account_info())?;
-
-    msg!("Closed tracker account: &{:?}&", ctx.accounts.tracker.key());
-
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
+    // close order account
+    ctx.accounts.order.state = OrderState::Closed.into();
 
     Ok(())
 }

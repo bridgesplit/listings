@@ -1,19 +1,16 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use vault::utils::{get_bump_in_seed_form, lamport_transfer};
 
-use crate::{
-    instructions::order::edit::EditSide,
-    state::*,
-    utils::{print_webhook_logs_for_wallet, transfer_sol},
-};
+use crate::{state::*, utils::transfer_sol};
 
 #[derive(Accounts)]
-#[instruction()]
+#[instruction(amount_change: u64, is_increase: bool)]
 pub struct EditBiddingWallet<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
         mut,
+        constraint = is_increase || amount_change <= wallet.balance,
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,
@@ -22,7 +19,11 @@ pub struct EditBiddingWallet<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> ProgramResult {
+pub fn handler(
+    ctx: Context<EditBiddingWallet>,
+    amount_change: u64,
+    is_increase: bool,
+) -> ProgramResult {
     msg!("Editing sol balance of the listings bidding wallet account");
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
@@ -33,27 +34,24 @@ pub fn handler(ctx: Context<EditBiddingWallet>, amount: u64, edit_side: u8) -> P
         bump,
     ][..]];
 
-    Wallet::edit(&mut ctx.accounts.wallet, amount, 0, edit_side);
+    Wallet::edit_balance(&mut ctx.accounts.wallet, is_increase, amount_change);
 
     // transfer the amount to the wallet account to initializer if it is a deposit
     // transfer the amount from the wallet account to initializer if it is a withdraw
-    if EditSide::is_increase(edit_side) {
+    if is_increase {
         transfer_sol(
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             signer_seeds,
-            amount,
+            amount_change,
         )?;
     } else {
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
-            amount,
+            amount_change,
         )?;
     }
-
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
-
     Ok(())
 }

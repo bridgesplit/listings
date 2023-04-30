@@ -1,10 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use vault::utils::get_bump_in_seed_form;
 
-use crate::{
-    state::*,
-    utils::{print_webhook_logs_for_wallet, transfer_sol},
-};
+use crate::{state::*, utils::transfer_sol};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -50,8 +47,6 @@ pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
         ctx.accounts.initializer.key(),
         amount,
     );
-
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
 
     Ok(())
 }

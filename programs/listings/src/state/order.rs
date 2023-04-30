@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
 use num_enum::IntoPrimitive;
 
-use crate::instructions::order::EditSide;
-
 pub const ORDER_VERSION: u8 = 1;
 
 #[account()]
@@ -21,6 +19,7 @@ pub struct Order {
     /// type of order - buy/sell
     pub side: u8,
     /// number of bids order is making
+    /// always for 1 for sell
     pub size: u64,
     /// bid amount in lamports
     pub price: u64,
@@ -30,6 +29,8 @@ pub struct Order {
     pub init_time: i64,
     /// last time the order was edited
     pub last_edit_time: i64,
+    /// nft mint in case order is a sell order
+    pub nft_mint: Pubkey,
     /// reserved space for future changes
     reserve: [u8; 512],
 }
@@ -65,6 +66,7 @@ impl Order {
         owner: Pubkey,
         wallet: Pubkey,
         nonce: Pubkey,
+        nft_mint: Pubkey,
         time: i64,
         side: u8,
         size: u64,
@@ -76,6 +78,7 @@ impl Order {
         self.nonce = nonce;
         self.owner = owner;
         self.wallet = wallet;
+        self.nft_mint = nft_mint;
         self.side = side;
         self.size = size;
         self.price = price;
@@ -84,50 +87,19 @@ impl Order {
         self.last_edit_time = time;
     }
 
-    /// check if a buy order being filled has a higher price than the sell order
-    pub fn spill_over(buy_price: u64, sell_price: u64) -> bool {
-        buy_price > sell_price
-    }
-
-    /// edit an order account
+    /// edit a buy order account
     /// if size is 0, order is closed
     /// any size change is considered partial
-    pub fn edit(&mut self, price: u64, edit_size: u64, edit_side: u8, time: i64) {
-        let size = Self::edit_size(self.size, edit_size, edit_side, self.side);
-        self.size = size;
-        self.price = price;
+    pub fn edit_buy(&mut self, new_price: u64, new_size: u64, time: i64) {
+        self.size = new_size;
+        self.price = new_price;
         self.last_edit_time = time;
-        // mark order as partial if size is less than original size and closed if size is 0
-        if size != 0 {
-            self.state = OrderState::Partial.into();
-        } else {
-            self.state = OrderState::Closed.into();
-        }
     }
 
-    /// fetch the new size of the order account after an edit
-    /// edit_size is the number of bids to be added or removed
-    pub fn edit_size(current_size: u64, edit_size: u64, edit_side: u8, side: u8) -> u64 {
-        let mut size = current_size;
-        if EditSide::is_increase(edit_side) {
-            size += edit_size;
-        } else if edit_size > size {
-            size = 0;
-        } else {
-            size -= edit_size;
-        }
-        if side == <OrderSide as Into<u8>>::into(OrderSide::Sell) && size > 1 {
-            size = 1;
-        }
-        size
-    }
-
-    /// validate if an increase edit can be made to the order account
-    pub fn validate_edit_side(edit_side: u8, state: u8) -> bool {
-        if !Self::is_active(state) && EditSide::is_increase(edit_side) {
-            return false;
-        }
-        true
+    /// edit a sell order account
+    pub fn edit_sell(&mut self, new_price: u64, time: i64) {
+        self.price = new_price;
+        self.last_edit_time = time;
     }
 
     /// return true if the order is active

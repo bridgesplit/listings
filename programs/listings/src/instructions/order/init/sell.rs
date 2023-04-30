@@ -5,14 +5,7 @@ use vault::{
     utils::{get_bump_in_seed_form, MplTokenMetadata},
 };
 
-use crate::{
-    instructions::order::edit::EditSide,
-    state::*,
-    utils::{
-        freeze_nft, print_webhook_logs_for_order, print_webhook_logs_for_tracker,
-        print_webhook_logs_for_wallet,
-    },
-};
+use crate::{state::*, utils::freeze_nft};
 
 use super::InitOrderData;
 
@@ -53,15 +46,6 @@ pub struct InitSellOrder<'info> {
         seeds::program = vault::ID,
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
-    #[account(
-        init,
-        seeds = [TRACKER_SEED.as_ref(),
-        nft_mint.key().as_ref()],
-        bump,
-        payer = initializer,
-        space = 8 + std::mem::size_of::<Tracker>()
-    )]
-    pub tracker: Box<Account<'info, Tracker>>,
     pub nft_mint: Box<Account<'info, Mint>>,
     /// CHECK: checked in cpi
     pub nft_edition: UncheckedAccount<'info>,
@@ -87,9 +71,10 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.initializer.key(),
         ctx.accounts.wallet.key(),
         data.nonce,
+        ctx.accounts.nft_mint.key(),
         ctx.accounts.clock.unix_timestamp,
         OrderSide::Sell.into(),
-        1,
+        1, // always 1
         data.price,
         OrderState::Ready.into(),
     );
@@ -101,15 +86,6 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.initializer.key.as_ref(),
         bump,
     ][..]];
-
-    // initialize the nft tracker
-    Tracker::init(
-        &mut ctx.accounts.tracker,
-        ctx.accounts.market.key(),
-        ctx.accounts.order.key(),
-        ctx.accounts.initializer.key(),
-        ctx.accounts.nft_mint.key(),
-    );
 
     // freeze the nft of the seller with the bidding wallet account as the authority
     freeze_nft(
@@ -123,11 +99,7 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         signer_seeds,
     )?;
 
-    Wallet::edit(&mut ctx.accounts.wallet, 0, 1, EditSide::Increase.into());
+    Wallet::edit_bids(&mut ctx.accounts.wallet, true, 1);
 
-    // log for webhook calcs
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_tracker(ctx.accounts.tracker.clone())?;
     Ok(())
 }
