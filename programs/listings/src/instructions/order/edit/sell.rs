@@ -26,6 +26,7 @@ pub struct EditSellOrder<'info> {
 }
 
 pub fn handler(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> ProgramResult {
+    msg!("Edit sell order: {}", ctx.accounts.order.key());
     // update the sell order account
     Order::edit_sell(
         &mut ctx.accounts.order,

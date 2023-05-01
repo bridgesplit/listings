@@ -77,8 +77,6 @@ pub struct FillBuyOrder<'info> {
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> Result<()> {
-    msg!("Filling buy order");
-
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let signer_seeds = &[&[
@@ -87,10 +85,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         bump,
     ][..]];
 
-    // edit wallet account to decrease balance and active bids
+    // edit wallet account to decrease balance
+    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
-
-    Wallet::edit_bids(&mut ctx.accounts.wallet, false, 1);
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
@@ -133,10 +130,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
 
     if size == 1 {
         // close order account
+        msg!("Close buy order account: {}", ctx.accounts.order.key());
         ctx.accounts.order.state = OrderState::Closed.into();
         ctx.accounts
             .order
             .close(ctx.accounts.buyer.to_account_info())?;
+    } else {
+        msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 
     Ok(())

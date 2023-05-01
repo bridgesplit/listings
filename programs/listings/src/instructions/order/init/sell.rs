@@ -15,7 +15,6 @@ pub struct InitSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
-        mut,
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,
@@ -62,7 +61,7 @@ pub struct InitSellOrder<'info> {
 }
 
 pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResult {
-    msg!("Initialize a new sell order");
+    msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
 
     // create a new order with size 1
     Order::init(
@@ -98,8 +97,6 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         signer_seeds,
     )?;
-
-    Wallet::edit_bids(&mut ctx.accounts.wallet, true, 1);
 
     Ok(())
 }

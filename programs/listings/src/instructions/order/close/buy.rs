@@ -20,16 +20,10 @@ pub struct CloseBuyOrder<'info> {
         close = initializer,
     )]
     pub order: Box<Account<'info, Order>>,
-    #[account(
-        seeds = [WALLET_SEED.as_ref(),
-        order.owner.as_ref()],
-        bump,
-    )]
-    pub wallet: Box<Account<'info, Wallet>>,
 }
 
 pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
-    msg!("Close order account");
+    msg!("Close buy order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
     Ok(())
 }

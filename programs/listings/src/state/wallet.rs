@@ -11,8 +11,6 @@ pub struct Wallet {
     pub owner: Pubkey,
     /// wallet balance
     pub balance: u64,
-    /// number of active bids the wallet is currently holding
-    pub active_bids: u64,
     /// reserved space for future changes
     reserve: [u8; 512],
 }
@@ -23,7 +21,6 @@ impl Wallet {
         self.version = WALLET_VERSION;
         self.owner = owner;
         self.balance = amount;
-        self.active_bids = 0;
     }
 
     pub fn edit_balance(&mut self, is_increase: bool, amount: u64) {
@@ -31,14 +28,6 @@ impl Wallet {
             self.balance += amount;
         } else {
             self.balance -= amount;
-        }
-    }
-
-    pub fn edit_bids(&mut self, is_increase: bool, size: u64) {
-        if is_increase {
-            self.active_bids += size;
-        } else {
-            self.active_bids -= size;
         }
     }
 }

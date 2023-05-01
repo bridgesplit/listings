@@ -82,8 +82,6 @@ pub struct FillSellOrder<'info> {
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
-    msg!("Filling order");
-
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let signer_seeds = &[&[
@@ -112,6 +110,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     )?;
 
     // edit wallet account to decrease balance and active bids
+    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
@@ -145,6 +144,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     )?;
 
     // close order account
+    msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
 
     Ok(())

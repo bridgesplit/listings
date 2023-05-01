@@ -44,7 +44,7 @@ pub struct InitBuyOrder<'info> {
 }
 
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
-    msg!("Initialize a new listings buy order");
+    msg!("Initialize a new buy order: {}", ctx.accounts.order.key());
 
     // create a new order with size 1
     Order::init(
@@ -60,9 +60,6 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         data.price,
         OrderState::Ready.into(),
     );
-
-    // increase wallet active bids
-    Wallet::edit_bids(&mut ctx.accounts.wallet, true, data.size);
 
     Ok(())
 }

@@ -21,7 +21,7 @@ pub struct InitBiddingWallet<'info> {
 }
 
 pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
-    msg!("Initializing a new bidding wallet account");
+    msg!("Initializing a new wallet: {}", ctx.accounts.wallet.key());
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 

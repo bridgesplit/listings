@@ -27,6 +27,7 @@ pub struct CloseSellOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     #[account(
+        mut,
         seeds = [WALLET_SEED.as_ref(),
         order.owner.as_ref()],
         bump,
@@ -52,7 +53,7 @@ pub struct CloseSellOrder<'info> {
 }
 
 pub fn handler(ctx: Context<CloseSellOrder>) -> ProgramResult {
-    msg!("Close order account");
+    msg!("Close sell order account: {}", ctx.accounts.order.key());
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let signer_seeds = &[&[

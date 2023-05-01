@@ -10,14 +10,6 @@ pub struct EditBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
-        mut,
-        constraint = wallet.balance >= data.new_size * data.new_price,
-        seeds = [WALLET_SEED.as_ref(),
-        initializer.key().as_ref()],
-        bump,
-    )]
-    pub wallet: Box<Account<'info, Wallet>>,
-    #[account(
         seeds = [MARKET_SEED.as_ref(),
         market.pool_mint.as_ref()],
         bump,
@@ -40,8 +32,7 @@ pub struct EditBuyOrder<'info> {
 }
 
 pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
-    Wallet::edit_bids(&mut ctx.accounts.wallet, false, ctx.accounts.order.size);
-
+    msg!("Edit buy order: {}", ctx.accounts.order.key());
     // edit the order with size
     Order::edit_buy(
         &mut ctx.accounts.order,
@@ -49,9 +40,6 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramRes
         data.new_size,
         ctx.accounts.clock.unix_timestamp,
     );
-
-    // edit wallet active bids
-    Wallet::edit_bids(&mut ctx.accounts.wallet, true, data.new_size);
 
     Ok(())
 }

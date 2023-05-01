@@ -24,7 +24,7 @@ pub fn handler(
     amount_change: u64,
     is_increase: bool,
 ) -> ProgramResult {
-    msg!("Editing sol balance of the listings bidding wallet account");
+    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
