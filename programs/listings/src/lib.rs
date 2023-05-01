@@ -36,12 +36,12 @@ pub mod listings {
     }
 
     /// edit a bid
-    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult {
+    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
         instructions::order::edit::buy::handler(ctx, data)
     }
 
     /// edit a listing
-    pub fn edit_sell_order(ctx: Context<EditSellOrder>, data: EditOrderData) -> ProgramResult {
+    pub fn edit_sell_order(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> ProgramResult {
         instructions::order::edit::sell::handler(ctx, data)
     }
 
@@ -59,9 +59,14 @@ pub mod listings {
         instructions::order::fill::sell::handler(ctx)
     }
 
-    /// cancel a bid/listing
-    pub fn close_order(ctx: Context<CloseOrder>) -> ProgramResult {
-        instructions::order::close::handler(ctx)
+    /// cancel a buy order
+    pub fn close_buy_order(ctx: Context<CloseBuyOrder>) -> ProgramResult {
+        instructions::order::close::buy::handler(ctx)
+    }
+
+    /// cancel a sell order
+    pub fn close_sell_order(ctx: Context<CloseSellOrder>) -> ProgramResult {
+        instructions::order::close::sell::handler(ctx)
     }
 
     /// initializer a new bidding wallet
@@ -72,9 +77,9 @@ pub mod listings {
     /// edit a bidding wallet
     pub fn edit_wallet(
         ctx: Context<EditBiddingWallet>,
-        amount: u64,
-        edit_side: u8,
+        amount_change: u64,
+        increase: bool,
     ) -> ProgramResult {
-        instructions::wallet::edit::handler(ctx, amount, edit_side)
+        instructions::wallet::edit::handler(ctx, amount_change, increase)
     }
 }

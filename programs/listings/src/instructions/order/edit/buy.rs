@@ -1,28 +1,15 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{
-    state::*,
-    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet},
-};
+use crate::state::*;
 
-use super::EditOrderData;
+use super::EditBuyOrderData;
 
 #[derive(Accounts)]
-#[instruction(data: EditOrderData)]
+#[instruction(data: EditBuyOrderData)]
 pub struct EditBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
-        mut,
-        constraint = Wallet::validate(wallet.balance, data.price, data.side),
-        seeds = [WALLET_SEED.as_ref(),
-        initializer.key().as_ref()],
-        bump,
-    )]
-    pub wallet: Box<Account<'info, Wallet>>,
-    #[account(
-        constraint = Order::validate_edit_side(data.side, market.state),
-        constraint = data.price > 0,
         seeds = [MARKET_SEED.as_ref(),
         market.pool_mint.as_ref()],
         bump,
@@ -31,8 +18,8 @@ pub struct EditBuyOrder<'info> {
     #[account(
         mut,
         constraint = order.owner == initializer.key(),
-        // cannot increase size of order if it is already filled/cancelled
-        constraint = Order::validate_edit_side(data.side, order.state),
+        constraint = data.new_size > 0 && data.new_price > 0,
+        constraint = Order::is_active(order.state),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
         order.market.key().as_ref(),
@@ -44,20 +31,15 @@ pub struct EditBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn handler(ctx: Context<EditBuyOrder>, data: EditOrderData) -> ProgramResult {
+pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
+    msg!("Edit buy order: {}", ctx.accounts.order.key());
     // edit the order with size
-    Order::edit(
+    Order::edit_buy(
         &mut ctx.accounts.order,
-        data.price,
-        data.size,
-        data.side,
+        data.new_price,
+        data.new_size,
         ctx.accounts.clock.unix_timestamp,
     );
 
-    // edit wallet active bids
-    Wallet::edit(&mut ctx.accounts.wallet, 0, data.size, data.side);
-
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
     Ok(())
 }

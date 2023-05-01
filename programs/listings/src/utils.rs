@@ -1,9 +1,9 @@
 use anchor_lang::{
-    prelude::{msg, Account, AccountInfo, CpiContext},
+    prelude::{AccountInfo, CpiContext},
     solana_program::{
         entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
     },
-    AnchorDeserialize, Key, ToAccountInfo,
+    AnchorDeserialize, ToAccountInfo,
 };
 use anchor_mpl_token_metadata::transfer::{metaplex_transfer, MetaplexTransfer, TransferParams};
 use anchor_spl::token::{self, Approve, Transfer};
@@ -12,8 +12,6 @@ use mpl_token_metadata::{
     state::{Metadata, TokenStandard},
 };
 use vault::utils::get_metaplex_transfer_params;
-
-use crate::state::{Order, Tracker, Wallet};
 
 fn create_freeze_nft_account_infos<'info>(
     nft_mint: AccountInfo<'info>,
@@ -162,7 +160,7 @@ fn transfer_nft_metaplex<'info>(
         ata_program: associated_token_program.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    metaplex_transfer(cpi_ctx, transfer_params, 1)
+    metaplex_transfer(cpi_ctx, transfer_params)
 }
 
 fn transfer_nft_token<'info>(
@@ -249,60 +247,4 @@ pub fn transfer_sol<'info>(
         signer_seeds,
     )
     .map_err(Into::into)
-}
-
-// !! DO NOT EDIT THE FOLLOWING CODE !! //
-
-pub fn print_webhook_logs_for_order(
-    order: Box<Account<'_, Order>>,
-    wallet: Box<Account<'_, Wallet>>,
-) -> ProgramResult {
-    msg!(
-        "Edit order account: &{:?}&, new order data is: &{{\"version\": {}, \"nonce\": \"{}\", \"market\": \"{}\", \"owner\": \"{}\", \"wallet\": {{\"version\": {}, \"owner\": \"{}\", \"balance\": {}, \"activeBids\": {}, \"address\": \"{}\"}}, \"side\": {}, \"size\": {}, \"price\": {}, \"state\": {}, \"initTime\": {}, \"lastEditTime\": {}, \"address\": \"{}\"}}",
-        order.key(),
-        order.version,
-        order.nonce,
-        order.market,
-        order.owner,
-        wallet.version,
-        wallet.owner,
-        wallet.balance,
-        wallet.active_bids,
-        wallet.key(),
-        order.side,
-        order.size,
-        order.price,
-        order.state,
-        order.init_time,
-        order.last_edit_time,
-        order.key(),
-    );
-    Ok(())
-}
-
-pub fn print_webhook_logs_for_wallet(wallet: Box<Account<'_, Wallet>>) -> ProgramResult {
-    msg!(
-        "Edit wallet account: &{:?}&, new wallet data is: &{{\"version\": {}, \"owner\": \"{}\", \"balance\": {}, \"activeBids\": {}, \"address\": \"{}\"}}",
-        wallet.key(),
-        wallet.version,
-        wallet.owner,
-        wallet.balance,
-        wallet.active_bids,
-        wallet.key(),
-    );
-    Ok(())
-}
-
-pub fn print_webhook_logs_for_tracker(tracker: Box<Account<'_, Tracker>>) -> ProgramResult {
-    msg!(
-        "Edit tracker account: &{:?}&, new tracker data is: &{{\"version\": {}, \"market\": \"{}\", \"order\": \"{}\", \"owner\": \"{}\", \"nftMint\": \"{}\", \"address\": \"{}\", \"nftMetadata\": null}}",
-        tracker.key(),
-        tracker.version,
-        tracker.market,
-        tracker.order,
-        tracker.owner,
-        tracker.nft_mint,
-        tracker.key(),
-    );
-    Ok(())
 }

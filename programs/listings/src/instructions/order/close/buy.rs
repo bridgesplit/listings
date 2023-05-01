@@ -1,35 +1,29 @@
 use anchor_lang::Key;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::{state::*, utils::print_webhook_logs_for_order};
+use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction()]
-pub struct CloseOrder<'info> {
+pub struct CloseBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
         mut,
         constraint = order.owner == initializer.key(),
+        constraint = Order::is_active(order.state),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
         order.market.as_ref(),
         initializer.key().as_ref()],
         bump,
+        close = initializer,
     )]
     pub order: Box<Account<'info, Order>>,
-    #[account(
-        seeds = [WALLET_SEED.as_ref(),
-        order.owner.as_ref()],
-        bump,
-    )]
-    pub wallet: Box<Account<'info, Wallet>>,
 }
 
-pub fn handler(ctx: Context<CloseOrder>) -> ProgramResult {
-    msg!("Close order account");
+pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
+    msg!("Close buy order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
-
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
     Ok(())
 }

@@ -6,11 +6,7 @@ use anchor_spl::{
 };
 use vault::utils::{get_bump_in_seed_form, lamport_transfer, MplTokenMetadata};
 
-use crate::{
-    instructions::order::edit::EditSide,
-    state::*,
-    utils::{print_webhook_logs_for_order, print_webhook_logs_for_wallet, transfer_nft},
-};
+use crate::{state::*, utils::transfer_nft};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -48,6 +44,9 @@ pub struct FillBuyOrder<'info> {
         bump,
     )]
     pub order: Box<Account<'info, Order>>,
+    #[account(
+        constraint = order.nft_mint == Pubkey::default() || order.nft_mint == nft_mint.key()
+    )]
     pub nft_mint: Box<Account<'info, Mint>>,
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: constraint check in multiple CPI calls
@@ -78,8 +77,6 @@ pub struct FillBuyOrder<'info> {
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> Result<()> {
-    msg!("Filling buy order");
-
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
     let signer_seeds = &[&[
@@ -88,13 +85,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         bump,
     ][..]];
 
-    // edit wallet account to decrease balance and active bids
-    Wallet::edit(
-        &mut ctx.accounts.wallet,
-        ctx.accounts.order.price,
-        1,
-        EditSide::Decrease.into(),
-    );
+    // edit wallet account to decrease balance
+    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
+    Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
@@ -126,16 +119,25 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
 
     // edit order
     let price = ctx.accounts.order.price;
-    Order::edit(
+    let size = ctx.accounts.order.size;
+
+    Order::edit_buy(
         &mut ctx.accounts.order,
         price,
-        1,
-        EditSide::Decrease.into(),
+        size - 1,
         ctx.accounts.clock.unix_timestamp,
     );
 
-    print_webhook_logs_for_order(ctx.accounts.order.clone(), ctx.accounts.wallet.clone())?;
-    print_webhook_logs_for_wallet(ctx.accounts.wallet.clone())?;
+    if size == 1 {
+        // close order account
+        msg!("Close buy order account: {}", ctx.accounts.order.key());
+        ctx.accounts.order.state = OrderState::Closed.into();
+        ctx.accounts
+            .order
+            .close(ctx.accounts.buyer.to_account_info())?;
+    } else {
+        msg!("Filled buy order: {}", ctx.accounts.order.key());
+    }
 
     Ok(())
 }
