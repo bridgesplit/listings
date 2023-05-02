@@ -1,11 +1,21 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use anchor_spl::token::{Mint, Token, TokenAccount};
-use vault::{
-    state::{Appraisal, APPRAISAL_SEED},
-    utils::{get_bump_in_seed_form, MplTokenMetadata},
+use anchor_lang::{
+    prelude::*,
+    solana_program::{entrypoint::ProgramResult, sysvar},
 };
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{Mint, Token, TokenAccount},
+};
+use bridgesplit_program_utils::{
+    get_bump_in_seed_form, state::Metadata, ExtraDelegateParams, MplTokenMetadata,
+};
+use mpl_token_metadata::instruction::DelegateArgs;
+use vault::state::{Appraisal, APPRAISAL_SEED};
 
-use crate::{state::*, utils::freeze_nft};
+use crate::{
+    state::*,
+    utils::{freeze_nft, get_pnft_params},
+};
 
 use super::InitOrderData;
 
@@ -46,6 +56,7 @@ pub struct InitSellOrder<'info> {
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
     pub nft_mint: Box<Account<'info, Mint>>,
+    pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: checked in cpi
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
@@ -54,14 +65,23 @@ pub struct InitSellOrder<'info> {
         constraint = nft_ta.mint == nft_mint.key(),
     )]
     pub nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: checked by constraint and in cpi
+    #[account(address = sysvar::instructions::id())]
+    pub sysvar_instructions: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResult {
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
+    data: InitOrderData,
+) -> ProgramResult {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
+
+    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
 
     // create a new order with size 1
     Order::init(
@@ -86,17 +106,37 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         bump,
     ][..]];
 
-    // // freeze the nft of the seller with the bidding wallet account as the authority
-    // freeze_nft(
-    //     ctx.accounts.nft_mint.to_account_info(),
-    //     ctx.accounts.nft_edition.to_account_info(),
-    //     ctx.accounts.nft_ta.to_account_info(),
-    //     ctx.accounts.wallet.to_account_info(),
-    //     ctx.accounts.initializer.to_account_info(),
-    //     ctx.accounts.token_program.to_account_info(),
-    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
-    //     signer_seeds,
-    // )?;
+    // freeze the nft of the seller with the bidding wallet account as the authority
+    freeze_nft(
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.nft_mint.to_account_info(),
+        ctx.accounts.nft_ta.to_account_info(),
+        ctx.accounts.nft_mint.to_account_info(),
+        ctx.accounts.nft_metadata.to_account_info(),
+        ctx.accounts.nft_edition.to_account_info(),
+        ctx.accounts.wallet.to_account_info(),
+        ctx.accounts.system_program.to_account_info(),
+        ctx.accounts.sysvar_instructions.to_account_info(),
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.associated_token_program.to_account_info(),
+        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        signer_seeds,
+        ExtraDelegateParams {
+            master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
+            delegate_record: pnft_params.token_record.clone(),
+            token_record: pnft_params.token_record.clone(),
+            authorization_rules_program: pnft_params.authorization_rules_program.clone(),
+            authorization_rules: pnft_params.authorization_rules.clone(),
+            token: Some(ctx.accounts.nft_mint.to_account_info()),
+            spl_token_program: Some(ctx.accounts.token_program.to_account_info()),
+            delegate_args: DelegateArgs::UtilityV1 {
+                amount: 1,
+                authorization_data: None,
+            },
+        },
+        pnft_params,
+    )?;
 
     Ok(())
 }

@@ -31,7 +31,10 @@ pub mod listings {
     }
 
     /// initializer a new listing
-    pub fn init_sell_order(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResult {
+    pub fn init_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
+        data: InitOrderData,
+    ) -> ProgramResult {
         instructions::order::init::sell::handler(ctx, data)
     }
 
@@ -65,7 +68,9 @@ pub mod listings {
     }
 
     /// cancel a sell order
-    pub fn close_sell_order(ctx: Context<CloseSellOrder>) -> ProgramResult {
+    pub fn close_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>,
+    ) -> ProgramResult {
         instructions::order::close::sell::handler(ctx)
     }
 
