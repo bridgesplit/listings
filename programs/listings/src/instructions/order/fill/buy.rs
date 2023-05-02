@@ -1,9 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::sysvar};
-use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::state::Metadata;
 use vault::utils::{get_bump_in_seed_form, lamport_transfer, MplTokenMetadata};
 
 use crate::{state::*, utils::transfer_nft};
@@ -92,23 +92,23 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
     // transfer nft
-    transfer_nft(
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.buyer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.buyer_nft_ta.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.instructions_program.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        remaining_accounts,
-        signer_seeds,
-    )?;
+    // transfer_nft(
+    //     ctx.accounts.initializer.to_account_info(),
+    //     ctx.accounts.initializer.to_account_info(),
+    //     ctx.accounts.buyer.to_account_info(),
+    //     ctx.accounts.nft_mint.to_account_info(),
+    //     ctx.accounts.nft_metadata.to_account_info(),
+    //     ctx.accounts.nft_edition.to_account_info(),
+    //     ctx.accounts.seller_nft_ta.to_account_info(),
+    //     ctx.accounts.buyer_nft_ta.to_account_info(),
+    //     ctx.accounts.system_program.to_account_info(),
+    //     ctx.accounts.instructions_program.to_account_info(),
+    //     ctx.accounts.token_program.to_account_info(),
+    //     ctx.accounts.associated_token_program.to_account_info(),
+    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
+    //     remaining_accounts,
+    //     signer_seeds,
+    // )?;
 
     // transfer sol from buyer to seller
     lamport_transfer(

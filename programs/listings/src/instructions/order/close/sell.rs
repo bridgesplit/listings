@@ -1,10 +1,10 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use anchor_lang::{solana_program::sysvar, Key};
-use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::state::Metadata;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::{state::*, utils::unfreeze_nft};
@@ -62,16 +62,16 @@ pub fn handler(ctx: Context<CloseSellOrder>) -> ProgramResult {
         bump,
     ][..]];
 
-    // unfreeze nft first
-    unfreeze_nft(
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-    )?;
+    // // unfreeze nft first
+    // unfreeze_nft(
+    //     ctx.accounts.nft_mint.to_account_info(),
+    //     ctx.accounts.nft_edition.to_account_info(),
+    //     ctx.accounts.nft_ta.to_account_info(),
+    //     ctx.accounts.wallet.to_account_info(),
+    //     ctx.accounts.token_program.to_account_info(),
+    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
+    //     signer_seeds,
+    // )?;
 
     ctx.accounts.order.state = OrderState::Closed.into();
     Ok(())

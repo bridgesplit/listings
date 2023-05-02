@@ -1,9 +1,9 @@
 use anchor_lang::{prelude::*, solana_program::sysvar};
-use anchor_mpl_token_metadata::state::Metadata;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::state::Metadata;
 use vault::{
     errors::SpecificErrorCode,
     utils::{get_bump_in_seed_form, MplTokenMetadata},
@@ -98,16 +98,16 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         return Err(SpecificErrorCode::WrongAccount.into());
     }
 
-    // unfreeze nft first so that a transfer can be made
-    unfreeze_nft(
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-    )?;
+    // // unfreeze nft first so that a transfer can be made
+    // unfreeze_nft(
+    //     ctx.accounts.nft_mint.to_account_info(),
+    //     ctx.accounts.nft_edition.to_account_info(),
+    //     ctx.accounts.seller_nft_ta.to_account_info(),
+    //     ctx.accounts.wallet.to_account_info(),
+    //     ctx.accounts.token_program.to_account_info(),
+    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
+    //     signer_seeds,
+    // )?;
 
     // edit wallet account to decrease balance and active bids
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
@@ -115,24 +115,24 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
 
     let remaining_accounts = ctx.remaining_accounts.to_vec();
 
-    // transfer nft
-    transfer_nft(
-        nft_authority,
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.buyer_nft_ta.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.instructions_program.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        remaining_accounts,
-        signer_seeds,
-    )?;
+    // // transfer nft
+    // transfer_nft(
+    //     nft_authority,
+    //     ctx.accounts.initializer.to_account_info(),
+    //     ctx.accounts.initializer.to_account_info(),
+    //     ctx.accounts.nft_mint.to_account_info(),
+    //     ctx.accounts.nft_metadata.to_account_info(),
+    //     ctx.accounts.nft_edition.to_account_info(),
+    //     ctx.accounts.seller_nft_ta.to_account_info(),
+    //     ctx.accounts.buyer_nft_ta.to_account_info(),
+    //     ctx.accounts.system_program.to_account_info(),
+    //     ctx.accounts.instructions_program.to_account_info(),
+    //     ctx.accounts.token_program.to_account_info(),
+    //     ctx.accounts.associated_token_program.to_account_info(),
+    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
+    //     remaining_accounts,
+    //     signer_seeds,
+    // )?;
 
     // transfer sol from buyer to seller
     transfer_sol(

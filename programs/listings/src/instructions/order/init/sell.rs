@@ -86,17 +86,17 @@ pub fn handler(ctx: Context<InitSellOrder>, data: InitOrderData) -> ProgramResul
         bump,
     ][..]];
 
-    // freeze the nft of the seller with the bidding wallet account as the authority
-    freeze_nft(
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-    )?;
+    // // freeze the nft of the seller with the bidding wallet account as the authority
+    // freeze_nft(
+    //     ctx.accounts.nft_mint.to_account_info(),
+    //     ctx.accounts.nft_edition.to_account_info(),
+    //     ctx.accounts.nft_ta.to_account_info(),
+    //     ctx.accounts.wallet.to_account_info(),
+    //     ctx.accounts.initializer.to_account_info(),
+    //     ctx.accounts.token_program.to_account_info(),
+    //     ctx.accounts.mpl_token_metadata_program.to_account_info(),
+    //     signer_seeds,
+    // )?;
 
     Ok(())
 }
