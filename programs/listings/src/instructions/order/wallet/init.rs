@@ -48,5 +48,10 @@ pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
         amount,
     );
 
+    Wallet::emit_event(
+        &mut ctx.accounts.wallet.clone(),
+        ctx.accounts.wallet.key(),
+        WalletEditType::Init,
+    );
     Ok(())
 }

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use num_enum::IntoPrimitive;
 
 pub const WALLET_VERSION: u8 = 1;
 
@@ -15,6 +16,22 @@ pub struct Wallet {
     reserve: [u8; 512],
 }
 
+#[derive(IntoPrimitive)]
+#[repr(u8)]
+pub enum WalletEditType {
+    Init,
+    Edit,
+}
+
+#[event]
+pub struct WalletEditEvent {
+    pub edit_type: u8,
+    pub address: String,
+    pub version: u8,
+    pub owner: String,
+    pub balance: u64,
+}
+
 impl Wallet {
     /// initialize a new order account
     pub fn init(&mut self, owner: Pubkey, amount: u64) {
@@ -29,5 +46,15 @@ impl Wallet {
         } else {
             self.balance -= amount;
         }
+    }
+
+    pub fn emit_event(&mut self, address: Pubkey, edit_type: WalletEditType) {
+        emit!(WalletEditEvent {
+            edit_type: edit_type.into(),
+            address: address.to_string(),
+            version: self.version,
+            owner: self.owner.to_string(),
+            balance: self.balance,
+        })
     }
 }

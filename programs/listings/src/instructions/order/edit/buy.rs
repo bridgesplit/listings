@@ -41,5 +41,11 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramRes
         ctx.accounts.clock.unix_timestamp,
     );
 
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Edit,
+    );
+
     Ok(())
 }

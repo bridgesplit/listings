@@ -61,5 +61,11 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         OrderState::Ready.into(),
     );
 
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Init,
+    );
+
     Ok(())
 }

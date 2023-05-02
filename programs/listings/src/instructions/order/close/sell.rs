@@ -21,6 +21,7 @@ pub struct CloseSellOrder<'info> {
     #[account(
         mut,
         constraint = order.owner == initializer.key(),
+        constraint = order.market == market.key(),
         constraint = Order::is_active(order.state),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
@@ -31,13 +32,22 @@ pub struct CloseSellOrder<'info> {
     )]
     pub order: Box<Account<'info, Order>>,
     #[account(
+        constraint = Market::is_active(market.state),
+        seeds = [MARKET_SEED.as_ref(),
+        market.pool_mint.as_ref()],
+        bump,
+    )]
+    pub market: Box<Account<'info, Market>>,
+    #[account(
         mut,
         seeds = [WALLET_SEED.as_ref(),
         order.owner.as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
+    #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
@@ -73,9 +83,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
     unfreeze_nft(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_ta.to_account_info(),
         ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_metadata.to_account_info(),
         ctx.accounts.nft_edition.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
@@ -83,6 +93,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        true,
         signer_seeds,
         ExtraRevokeParams {
             master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
@@ -98,5 +109,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
     )?;
 
     ctx.accounts.order.state = OrderState::Closed.into();
+
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Close,
+    );
     Ok(())
 }

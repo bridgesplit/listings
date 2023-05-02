@@ -25,5 +25,11 @@ pub struct CloseBuyOrder<'info> {
 pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
     msg!("Close buy order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
+
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Close,
+    );
     Ok(())
 }

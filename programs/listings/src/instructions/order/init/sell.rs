@@ -25,6 +25,7 @@ pub struct InitSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        mut,
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,
@@ -55,6 +56,7 @@ pub struct InitSellOrder<'info> {
         seeds::program = vault::ID,
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
+    #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: checked in cpi
@@ -112,7 +114,6 @@ pub fn handler<'info>(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_metadata.to_account_info(),
         ctx.accounts.nft_edition.to_account_info(),
         ctx.accounts.wallet.to_account_info(),
@@ -137,6 +138,12 @@ pub fn handler<'info>(
         },
         pnft_params,
     )?;
+
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Init,
+    );
 
     Ok(())
 }

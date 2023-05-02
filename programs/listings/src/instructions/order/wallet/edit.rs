@@ -53,5 +53,11 @@ pub fn handler(
             amount_change,
         )?;
     }
+
+    Wallet::emit_event(
+        &mut ctx.accounts.wallet.clone(),
+        ctx.accounts.wallet.key(),
+        WalletEditType::Edit,
+    );
     Ok(())
 }

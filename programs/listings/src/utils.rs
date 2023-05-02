@@ -27,6 +27,7 @@ pub fn transfer_nft<'info>(
     associated_token_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
     transfer_params: ExtraTransferParams<'info>,
+    signer_seeds: &[&[&[u8]]],
 ) -> Result<(), anchor_lang::prelude::Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitTransfer {
@@ -44,7 +45,7 @@ pub fn transfer_nft<'info>(
         token_program: token_program.to_account_info(),
         ata_program: associated_token_program.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
     bridgesplit_transfer(cpi_ctx, transfer_params, 1)
 }
 
@@ -52,9 +53,8 @@ pub fn transfer_nft<'info>(
 pub fn freeze_nft<'info>(
     authority: AccountInfo<'info>,
     payer: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
     token: AccountInfo<'info>,
-    token_ta: AccountInfo<'info>,
-    nft_mint: AccountInfo<'info>,
     nft_metadata: AccountInfo<'info>,
     nft_edition: AccountInfo<'info>,
     delegate: AccountInfo<'info>,
@@ -72,14 +72,13 @@ pub fn freeze_nft<'info>(
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
         token_owner: authority.to_account_info(),
-        token: token.to_account_info(),
-        mint: nft_mint.to_account_info(),
+        mint: mint.to_account_info(),
         metadata: nft_metadata.to_account_info(),
         edition: nft_edition.to_account_info(),
         system_program: system_program.to_account_info(),
         token_program: token_program.to_account_info(),
         ata_program: associated_token_program.to_account_info(),
-        token_ta: token_ta.to_account_info(),
+        token: token.to_account_info(),
         delegate: delegate.to_account_info(),
         mpl_token_metadata_program,
         sysvar_instructions: sysvar_instructions.to_account_info(),
@@ -92,9 +91,9 @@ pub fn freeze_nft<'info>(
 pub fn unfreeze_nft<'info>(
     authority: AccountInfo<'info>,
     payer: AccountInfo<'info>,
-    token_ta: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
+    token: AccountInfo<'info>,
     delegate: AccountInfo<'info>,
-    nft_mint: AccountInfo<'info>,
     nft_metadata: AccountInfo<'info>,
     nft_edition: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
@@ -102,6 +101,7 @@ pub fn unfreeze_nft<'info>(
     token_program: AccountInfo<'info>,
     associated_token_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
+    revoke: bool,
     signer_seeds: &[&[&[u8]]],
     freeze_params: ExtraRevokeParams<'info>,
     delegate_params: PnftParams<'info>,
@@ -111,20 +111,25 @@ pub fn unfreeze_nft<'info>(
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
         token_owner: authority.to_account_info(),
-        token: nft_mint.to_account_info(),
-        mint: nft_mint.to_account_info(),
+        token: token.to_account_info(),
+        mint: mint.to_account_info(),
         metadata: nft_metadata.to_account_info(),
         edition: nft_edition.to_account_info(),
         system_program: system_program.to_account_info(),
         token_program: token_program.to_account_info(),
         ata_program: associated_token_program.to_account_info(),
-        token_ta: token_ta.to_account_info(),
         delegate: delegate.to_account_info(),
         mpl_token_metadata_program,
         sysvar_instructions: sysvar_instructions.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    thaw_and_revoke(cpi_ctx, signer_seeds, delegate_params, freeze_params)
+    thaw_and_revoke(
+        cpi_ctx,
+        signer_seeds,
+        revoke,
+        delegate_params,
+        freeze_params,
+    )
 }
 
 /// transfer sol

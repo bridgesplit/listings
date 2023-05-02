@@ -29,7 +29,7 @@ pub struct FillSellOrder<'info> {
     #[account(
         mut,
         seeds = [WALLET_SEED.as_ref(),
-        initializer.key().as_ref()],
+        seller.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
@@ -52,7 +52,9 @@ pub struct FillSellOrder<'info> {
         close = seller
     )]
     pub order: Box<Account<'info, Order>>,
+    #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
@@ -85,6 +87,7 @@ pub struct FillSellOrder<'info> {
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
     let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+
     let signer_seeds = &[&[
         WALLET_SEED.as_ref(),
         ctx.accounts.order.owner.as_ref(),
@@ -103,9 +106,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     unfreeze_nft(
         ctx.accounts.seller.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.seller_nft_ta.to_account_info(),
         ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_metadata.to_account_info(),
         ctx.accounts.nft_edition.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
@@ -113,6 +116,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        false,
         signer_seeds,
         ExtraRevokeParams {
             master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
@@ -149,6 +153,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_data: None,
         },
+        signer_seeds,
     )?;
 
     // edit wallet account to decrease balance and active bids
@@ -166,6 +171,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
 
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());
+    Order::emit_event(
+        &mut ctx.accounts.order.clone(),
+        ctx.accounts.order.key(),
+        OrderEditType::Close,
+    );
     ctx.accounts.order.state = OrderState::Closed.into();
 
     Ok(())

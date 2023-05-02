@@ -35,6 +35,32 @@ pub struct Order {
     reserve: [u8; 512],
 }
 
+#[derive(IntoPrimitive)]
+#[repr(u8)]
+pub enum OrderEditType {
+    Init,
+    Edit,
+    Close,
+}
+
+#[event]
+pub struct OrderEditEvent {
+    pub edit_type: u8,
+    pub address: String,
+    pub version: u8,
+    pub nonce: String,
+    pub market: String,
+    pub owner: String,
+    pub wallet: String,
+    pub side: u8,
+    pub size: u64,
+    pub price: u64,
+    pub state: u8,
+    pub init_time: i64,
+    pub last_edit_time: i64,
+    pub nft_mint: String,
+}
+
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, IntoPrimitive)]
 #[repr(u8)]
 /// bid type for order
@@ -105,5 +131,24 @@ impl Order {
     /// return true if the order is active
     pub fn is_active(state: u8) -> bool {
         state != <OrderState as Into<u8>>::into(OrderState::Closed)
+    }
+
+    pub fn emit_event(&mut self, address: Pubkey, edit_type: OrderEditType) {
+        emit!(OrderEditEvent {
+            edit_type: edit_type.into(),
+            address: address.to_string(),
+            version: self.version,
+            nonce: self.nonce.to_string(),
+            market: self.market.to_string(),
+            owner: self.owner.to_string(),
+            wallet: self.wallet.to_string(),
+            side: self.side,
+            size: self.size,
+            price: self.price,
+            state: self.state,
+            init_time: self.init_time,
+            last_edit_time: self.last_edit_time,
+            nft_mint: self.nft_mint.to_string(),
+        })
     }
 }

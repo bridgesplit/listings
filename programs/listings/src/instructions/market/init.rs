@@ -29,5 +29,11 @@ pub fn handler(ctx: Context<InitMarket>) -> ProgramResult {
         ctx.accounts.pool_mint.key(),
         ctx.accounts.initializer.key(),
     );
+
+    Market::emit_event(
+        &mut ctx.accounts.market.clone(),
+        ctx.accounts.market.key(),
+        MarketEditType::Init,
+    );
     Ok(())
 }

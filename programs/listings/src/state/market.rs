@@ -26,6 +26,22 @@ pub enum MarketState {
     Closed,
 }
 
+#[derive(IntoPrimitive)]
+#[repr(u8)]
+pub enum MarketEditType {
+    Init,
+}
+
+#[event]
+pub struct MarketEditEvent {
+    pub edit_type: u8,
+    pub address: String,
+    pub version: u8,
+    pub pool_mint: String,
+    pub initializer: String,
+    pub state: u8,
+}
+
 impl Market {
     /// initialize a new market
     pub fn init(&mut self, pool_mint: Pubkey, initializer: Pubkey) {
@@ -38,5 +54,16 @@ impl Market {
     /// return true if the market is active
     pub fn is_active(state: u8) -> bool {
         state != <MarketState as Into<u8>>::into(MarketState::Closed)
+    }
+
+    pub fn emit_event(&mut self, address: Pubkey, edit_type: MarketEditType) {
+        emit!(MarketEditEvent {
+            edit_type: edit_type.into(),
+            address: address.to_string(),
+            version: self.version,
+            pool_mint: self.pool_mint.to_string(),
+            initializer: self.initializer.to_string(),
+            state: self.state,
+        })
     }
 }
