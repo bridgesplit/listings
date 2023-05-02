@@ -3,8 +3,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::state::Metadata;
-use vault::utils::{get_bump_in_seed_form, lamport_transfer, MplTokenMetadata};
+use bridgesplit_program_utils::{state::Metadata, get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::{state::*, utils::transfer_nft};
 
