@@ -142,6 +142,7 @@ pub fn handler<'info>(
     Order::emit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
+        ctx.accounts.market.pool_mint,
         OrderEditType::Init,
     );
 

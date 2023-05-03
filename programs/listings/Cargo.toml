@@ -18,7 +18,7 @@ default = []
 anchor-lang = { version = "=0.26.0", features = ["init-if-needed"] }
 anchor-spl = "=0.26.0"
 winnow = "=0.4.1"
-bridgesplit-program-utils = { path = "../../../program-utils" }
+bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git" }
 mpl-token-metadata = "=1.10.0"
 vault = { git="ssh://git@github.com/bridgesplit/bridgesplit-program.git", features=["no-entrypoint"] }
 num_enum = "0.5.6"

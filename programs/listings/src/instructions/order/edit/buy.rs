@@ -10,6 +10,7 @@ pub struct EditBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account(
+        constraint = market.key() == order.market,
         seeds = [MARKET_SEED.as_ref(),
         market.pool_mint.as_ref()],
         bump,
@@ -44,6 +45,7 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramRes
     Order::emit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
+        ctx.accounts.market.pool_mint,
         OrderEditType::Edit,
     );
 

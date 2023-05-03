@@ -603,6 +603,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#a262e1720406c77b39d59ec2c92e30495affcc2a"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

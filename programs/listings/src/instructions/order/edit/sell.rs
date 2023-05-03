@@ -22,6 +22,14 @@ pub struct EditSellOrder<'info> {
         bump,
     )]
     pub order: Box<Account<'info, Order>>,
+    #[account(
+        constraint = Market::is_active(market.state),
+        constraint = market.key() == order.market,
+        seeds = [MARKET_SEED.as_ref(),
+        market.pool_mint.as_ref()],
+        bump,
+    )]
+    pub market: Box<Account<'info, Market>>,
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -37,6 +45,7 @@ pub fn handler(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> ProgramR
     Order::emit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
+        ctx.accounts.market.pool_mint,
         OrderEditType::Edit,
     );
     Ok(())

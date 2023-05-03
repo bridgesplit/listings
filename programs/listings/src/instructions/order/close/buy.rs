@@ -20,6 +20,13 @@ pub struct CloseBuyOrder<'info> {
         close = initializer,
     )]
     pub order: Box<Account<'info, Order>>,
+    #[account(
+        constraint = market.key() == order.market,
+        seeds = [MARKET_SEED.as_ref(),
+        market.pool_mint.as_ref()],
+        bump,
+    )]
+    pub market: Box<Account<'info, Market>>,
 }
 
 pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
@@ -29,6 +36,7 @@ pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
     Order::emit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
+        ctx.accounts.market.pool_mint,
         OrderEditType::Close,
     );
     Ok(())
