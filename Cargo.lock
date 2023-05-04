@@ -208,7 +208,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "mpl-token-auth-rules",
- "mpl-token-metadata 1.10.0 (git+https://github.com/metaplex-foundation/metaplex-program-library)",
+ "mpl-token-metadata 1.11.0",
  "solana-program",
  "thiserror",
 ]
@@ -603,13 +603,14 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#a262e1720406c77b39d59ec2c92e30495affcc2a"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#9f186eb32d2ebb01371275d6612943d68c76e427"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "mpl-token-auth-rules",
- "mpl-token-metadata 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata 1.10.0",
  "solana-program",
+ "winnow",
 ]
 
 [[package]]
@@ -633,7 +634,7 @@ source = "git+ssh://git@github.com/bridgesplit/bridgesplit-token-controller.git#
 dependencies = [
  "anchor-lang",
  "anchor-spl",
- "mpl-token-metadata 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata 1.10.0",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",
@@ -872,9 +873,9 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7c99d16b88c92aef47e58dadd53e87b4bd234c29934947a6cec8b466300f99b"
+checksum = "0558d22a7b463ed0241e993f76f09f30b126687447751a8638587b864e4b3944"
 dependencies = [
  "darling_core",
  "darling_macro",
@@ -882,9 +883,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ea05d2fcb27b53f7a98faddaf5f2914760330ab7703adfc9df13332b42189f9"
+checksum = "ab8bfa2e259f8ee1ce5e97824a3c55ec4404a0d772ca7fa96bf19f0752a046eb"
 dependencies = [
  "fnv",
  "ident_case",
@@ -896,9 +897,9 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bfb82b62b1b8a2a9808fb4caf844ede819a76cfc23b2827d7f94eefb49551eb"
+checksum = "29a358ff9f12ec09c3e61fef9b5a9902623a695a46a917b07f269bff1445611a"
 dependencies = [
  "darling_core",
  "quote",
@@ -1237,9 +1238,9 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3afef3b6eff9ce9d8ff9b3601125eec7f0c8cbac7abd14f355d053fa56c98768"
+checksum = "8f6d5ed8676d904364de097082f4e7d240b571b67989ced0240f08b7f966f940"
 dependencies = [
  "cpufeatures",
 ]
@@ -1312,7 +1313,7 @@ dependencies = [
  "anchor-spl",
  "bridgesplit-program-utils",
  "cargo-husky",
- "mpl-token-metadata 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata 1.10.0",
  "num_enum",
  "vault",
  "winnow",
@@ -1405,9 +1406,9 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-auth-rules"
-version = "1.3.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24dcb2b0ec0e9246f6f035e0336ba3359c21f6928dfd90281999e2c8e8ab53eb"
+checksum = "12b9ceca1f8e1a6e3588e367f7d7790e5f19956165d972709f53f61bb297459e"
 dependencies = [
  "borsh 0.9.3",
  "mpl-token-metadata-context-derive 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1443,8 +1444,8 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata"
-version = "1.10.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#7d99e6b237dd0cca0d7d07d262ad3ee449bf99fc"
+version = "1.11.0"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1473,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata-context-derive"
 version = "0.2.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#7d99e6b237dd0cca0d7d07d262ad3ee449bf99fc"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -1494,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#7d99e6b237dd0cca0d7d07d262ad3ee449bf99fc"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1874,7 +1875,7 @@ dependencies = [
  "bridgesplit-paid-claim-approver",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
- "mpl-token-metadata 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata 1.10.0",
  "num_enum",
  "solana-program",
  "spl-associated-token-account",
@@ -1891,7 +1892,7 @@ dependencies = [
  "bridgesplit-paid-claim-approver",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
- "mpl-token-metadata 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mpl-token-metadata 1.10.0",
  "num_enum",
  "rental-auxilary",
  "solana-program",
@@ -2676,7 +2677,7 @@ dependencies = [
  "anchor-spl",
  "gem_bank",
  "hex",
- "mpl-token-metadata 1.10.0 (git+https://github.com/metaplex-foundation/metaplex-program-library)",
+ "mpl-token-metadata 1.11.0",
  "num_enum",
  "rentals",
  "shank 0.0.4",

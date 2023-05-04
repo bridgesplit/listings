@@ -14,6 +14,7 @@ use bridgesplit_program_utils::{
 #[allow(clippy::too_many_arguments)]
 pub fn transfer_nft<'info>(
     authority: AccountInfo<'info>,
+    token_owner: AccountInfo<'info>,
     payer: AccountInfo<'info>,
     to: AccountInfo<'info>,
     nft_mint: AccountInfo<'info>,
@@ -33,7 +34,7 @@ pub fn transfer_nft<'info>(
     let cpi_accounts = BridgesplitTransfer {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
-        token_owner: authority.to_account_info(),
+        token_owner: token_owner.to_account_info(),
         token: from_nft_ta.to_account_info(),
         destination_owner: to.to_account_info(),
         destination: to_nft_ta.to_account_info(),
@@ -108,7 +109,7 @@ pub fn unfreeze_nft<'info>(
 ) -> Result<(), anchor_lang::prelude::Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
     let cpi_accounts = ThawAndRevoke {
-        authority: authority.to_account_info(),
+        authority: delegate.to_account_info(),
         payer: payer.to_account_info(),
         token_owner: authority.to_account_info(),
         token: token.to_account_info(),

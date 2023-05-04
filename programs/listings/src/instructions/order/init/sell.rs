@@ -129,12 +129,9 @@ pub fn handler<'info>(
             token_record: pnft_params.token_record.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
-            token: Some(ctx.accounts.nft_mint.to_account_info()),
+            token: Some(ctx.accounts.nft_ta.to_account_info()),
             spl_token_program: Some(ctx.accounts.token_program.to_account_info()),
-            delegate_args: DelegateArgs::UtilityV1 {
-                amount: 1,
-                authorization_data: None,
-            },
+            delegate_args: DelegateArgs::StandardV1 { amount: 1 },
         },
         pnft_params,
     )?;

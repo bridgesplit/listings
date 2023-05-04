@@ -124,7 +124,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             token_record: pnft_params.token_record.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
-            delegate_args: RevokeArgs::UtilityV1,
+            delegate_args: RevokeArgs::StandardV1,
         },
         pnft_params.clone(),
     )?;
@@ -132,6 +132,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     // transfer nft
     transfer_nft(
         nft_authority,
+        ctx.accounts.seller.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
@@ -145,8 +146,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            owner_token_record: ctx.remaining_accounts.get(3).cloned(),
-            dest_token_record: pnft_params.token_record.clone(),
+            dest_token_record: ctx.remaining_accounts.get(3).cloned(),
+            owner_token_record: pnft_params.token_record.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_data: None,
@@ -169,13 +170,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
 
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());
+    ctx.accounts.order.state = OrderState::Closed.into();
     Order::emit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::Close,
     );
-    ctx.accounts.order.state = OrderState::Closed.into();
 
     Ok(())
 }

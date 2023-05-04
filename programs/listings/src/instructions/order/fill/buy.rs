@@ -92,6 +92,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     transfer_nft(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.initializer.to_account_info(),
         ctx.accounts.buyer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_metadata.to_account_info(),
