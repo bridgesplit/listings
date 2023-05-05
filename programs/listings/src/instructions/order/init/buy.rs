@@ -1,6 +1,6 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 
-use crate::state::*;
+use crate::{state::*, utils::parse_remaining_accounts};
 
 use super::InitOrderData;
 
@@ -43,9 +43,15 @@ pub struct InitBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+//remaining accounts 
+//0 ovol nft ta
+//1 ovol nft metadata
+
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
     msg!("Initialize a new buy order: {}", ctx.accounts.order.key());
 
+    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+    
     // create a new order with size 1
     Order::init(
         &mut ctx.accounts.order,
@@ -59,6 +65,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         data.size,
         data.price,
         OrderState::Ready.into(),
+        parsed_accounts.fees_on
     );
 
     Order::emit_event(

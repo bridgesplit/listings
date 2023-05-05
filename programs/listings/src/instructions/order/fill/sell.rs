@@ -14,7 +14,7 @@ use vault::{
 
 use crate::{
     state::*,
-    utils::{get_pnft_params, transfer_nft, transfer_sol, unfreeze_nft},
+    utils::{transfer_nft, transfer_sol, unfreeze_nft, get_fee_amount, parse_remaining_accounts},
 };
 
 #[derive(Accounts)]
@@ -73,6 +73,11 @@ pub struct FillSellOrder<'info> {
         associated_token::authority = initializer,
     )]
     pub buyer_nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: constraint
+    #[account(
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     /// CHECK: checked by constraint and in cpi
@@ -83,12 +88,22 @@ pub struct FillSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+//remaining accounts 
+// 0 token_record,
+// 1 authorization_rules,
+// 2 authorization_rules_program,
+// 3 ovol nft ta
+// 4 ovol nft metadata
+
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+
+    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+
+    let pnft_params = parsed_accounts.pnft_params;
 
     let signer_seeds = &[&[
         WALLET_SEED.as_ref(),
@@ -102,6 +117,35 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     // validate seller
     if ctx.accounts.order.owner != ctx.accounts.seller.key() {
         return Err(SpecificErrorCode::WrongAccount.into());
+    }
+
+    if parsed_accounts.fees_on {
+        let fee_amount = get_fee_amount(ctx.accounts.order.price);
+        transfer_sol(
+            sol_holder,
+            ctx.accounts.treasury.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+            fee_amount,
+        )?;
+        // transfer sol from buyer to seller
+        transfer_sol(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+            ctx.accounts.order.price,
+        )?;
+    } else {
+        // transfer sol from buyer to seller
+        transfer_sol(
+            sol_holder,
+            ctx.accounts.seller.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+            ctx.accounts.order.price,
+        )?;
+
     }
 
     // unfreeze nft first so that a transfer can be made
@@ -163,14 +207,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
-    // transfer sol from buyer to seller
-    transfer_sol(
-        sol_holder,
-        ctx.accounts.seller.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        signer_seeds,
-        ctx.accounts.order.price,
-    )?;
+
 
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());

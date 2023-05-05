@@ -15,7 +15,7 @@ use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
     state::*,
-    utils::{freeze_nft, get_pnft_params},
+    utils::{freeze_nft, parse_remaining_accounts},
 };
 
 use super::InitOrderData;
@@ -77,6 +77,13 @@ pub struct InitSellOrder<'info> {
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
     pub clock: Sysvar<'info, Clock>,
 }
+//remaining accounts 
+// 0 ovol nft ta
+// 1 ovol nft metadata
+// 2 token_record,
+// 4 authorization_rules,
+// 5 authorization_rules_program,
+
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
@@ -84,7 +91,10 @@ pub fn handler<'info>(
 ) -> ProgramResult {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
 
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+
+    let pnft_params = parsed_accounts.pnft_params;
+
 
     // create a new order with size 1
     Order::init(
@@ -99,6 +109,7 @@ pub fn handler<'info>(
         1, // always 1
         data.price,
         OrderState::Ready.into(),
+        parsed_accounts.fees_on
     );
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());

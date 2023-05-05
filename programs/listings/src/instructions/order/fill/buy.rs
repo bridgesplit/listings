@@ -8,11 +8,10 @@ use vault::utils::lamport_transfer;
 
 use crate::{
     state::*,
-    utils::{get_pnft_params, transfer_nft},
+    utils::{transfer_nft, parse_remaining_accounts, get_fee_amount},
 };
 
 #[derive(Accounts)]
-#[instruction()]
 pub struct FillBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -69,6 +68,11 @@ pub struct FillBuyOrder<'info> {
         associated_token::authority = buyer,
     )]
     pub buyer_nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: constraint
+    #[account(
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     /// CHECK: checked by constraint and in cpi
@@ -79,10 +83,20 @@ pub struct FillBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+//remaining accounts 
+// 0 token_record,
+// 1 authorization_rules,
+// 2 authorization_rules_program,
+// 3 ovol nft ta
+// 4 ovol nft metadata
+
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> Result<()> {
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+
+    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+
+    let pnft_params = parsed_accounts.pnft_params;
 
     // edit wallet account to decrease balance
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
@@ -114,12 +128,25 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         &[],
     )?;
 
-    // transfer sol from buyer to seller
-    lamport_transfer(
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.order.price,
-    )?;
+
+    if parsed_accounts.fees_on {
+        let fee_amount = get_fee_amount(ctx.accounts.order.price);
+        lamport_transfer(ctx.accounts.wallet.to_account_info(), ctx.accounts.treasury.to_account_info(), fee_amount)?;
+        // transfer sol from buyer to seller
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.order.price - fee_amount,
+        )?;
+    } else {
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.order.price,
+        )?;
+
+    }
+
 
     // edit order
     let price = ctx.accounts.order.price;

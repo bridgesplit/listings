@@ -1,15 +1,19 @@
 use anchor_lang::{
-    prelude::{AccountInfo, CpiContext},
+    prelude::{Account, AccountInfo, CpiContext, Pubkey, Error},
     solana_program::{
         entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
     },
-    ToAccountInfo,
+    ToAccountInfo, AccountDeserialize,
 };
+use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
+use anchor_spl::token::TokenAccount;
+
 use bridgesplit_program_utils::{
     bridgesplit_transfer, delegate_and_freeze, pnft::utils::PnftParams, thaw_and_revoke,
     BridgesplitTransfer, DelegateAndFreeze, ExtraDelegateParams, ExtraRevokeParams,
     ExtraTransferParams, ThawAndRevoke,
 };
+use crate::state::{Order, PROTOCOL_FEES_BPS};
 
 #[allow(clippy::too_many_arguments)]
 pub fn transfer_nft<'info>(
@@ -113,7 +117,7 @@ pub fn unfreeze_nft<'info>(
     signer_seeds: &[&[&[u8]]],
     freeze_params: ExtraRevokeParams<'info>,
     delegate_params: PnftParams<'info>,
-) -> Result<(), anchor_lang::prelude::Error> {
+) -> Result<(), Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
     let cpi_accounts = ThawAndRevoke {
         authority: delegate.to_account_info(),
@@ -168,4 +172,53 @@ pub fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
         authorization_rules_program: ra.get(2).cloned(),
         authorization_data: None,
     }
+}
+
+pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
+    let ovol_nft_ta_account_info = remaining_accounts.get(0);
+    let ovol_nft_metadata_account_info = remaining_accounts.get(1);
+
+    if ovol_nft_ta_account_info.is_some() && ovol_nft_metadata_account_info.is_some() {
+        if let Ok(nft_ta) = TokenAccount::try_deserialize(&mut &ovol_nft_ta_account_info.unwrap().data.borrow_mut()[..]) {
+            if let Ok(metadata) = Metadata::safe_deserialize(&mut &ovol_nft_metadata_account_info.unwrap().data.borrow_mut()[..]) {
+                if let Some(collection) = metadata.collection {
+                    if (nft_ta.amount == 1) && (nft_ta.owner == owner) && collection.verified == true &&  collection.key.to_string() == "9jnJWH9F9t1xAgw5RGwswVKY4GvY2RXhzLSJgpBAhoaR" {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false  
+}
+
+/// result of parsing remaining accounts
+pub struct ParsedRemainingAccounts<'info> {
+    //params for pnft ix's
+    pub pnft_params: PnftParams<'info>,
+    // apply fee on listings
+    pub fees_on: bool
+
+}
+
+
+
+pub fn parse_remaining_accounts(remaining_accounts: Vec<AccountInfo>, initializer: Pubkey) -> ParsedRemainingAccounts {
+    let fees_on = !check_ovol_holder(remaining_accounts.to_vec(), initializer);
+    //if ovol holder then 2-5 are pnft params
+    let pnft_params = if fees_on {
+        get_pnft_params(remaining_accounts[2..].to_vec())
+    } else {
+        get_pnft_params(remaining_accounts.to_vec())
+    };
+    ParsedRemainingAccounts { pnft_params, fees_on }
+}
+
+
+pub fn get_fees_on(order: Box<Account<'_, Order>>, ovol_fees_on: bool) -> bool {
+    order.fees_on && ovol_fees_on
+}
+
+pub fn get_fee_amount(order_price: u64) -> u64 {
+    (order_price.checked_mul(PROTOCOL_FEES_BPS)).unwrap().checked_div(10000).unwrap()
 }
