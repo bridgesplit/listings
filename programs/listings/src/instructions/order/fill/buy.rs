@@ -8,7 +8,7 @@ use vault::utils::lamport_transfer;
 
 use crate::{
     state::*,
-    utils::{transfer_nft, parse_remaining_accounts, get_fee_amount},
+    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft},
 };
 
 #[derive(Accounts)]
@@ -83,7 +83,7 @@ pub struct FillBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-//remaining accounts 
+//remaining accounts
 // 0 token_record,
 // 1 authorization_rules,
 // 2 authorization_rules_program,
@@ -93,8 +93,10 @@ pub struct FillBuyOrder<'info> {
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> Result<()> {
-
-    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+    let parsed_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+    );
 
     let pnft_params = parsed_accounts.pnft_params;
 
@@ -128,10 +130,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         &[],
     )?;
 
-
     if parsed_accounts.fees_on {
         let fee_amount = get_fee_amount(ctx.accounts.order.price);
-        lamport_transfer(ctx.accounts.wallet.to_account_info(), ctx.accounts.treasury.to_account_info(), fee_amount)?;
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.treasury.to_account_info(),
+            fee_amount,
+        )?;
         // transfer sol from buyer to seller
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
@@ -144,9 +149,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.order.price,
         )?;
-
     }
-
 
     // edit order
     let price = ctx.accounts.order.price;

@@ -43,7 +43,7 @@ pub struct Order {
     reserve_3: [u8; 30],
     /// reserved space for future changes
     reserve_4: [u8; 30],
-     /// reserved space for future changes
+    /// reserved space for future changes
     reserve_5: [u8; 3],
 }
 

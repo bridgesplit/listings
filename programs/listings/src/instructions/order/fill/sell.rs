@@ -14,7 +14,7 @@ use vault::{
 
 use crate::{
     state::*,
-    utils::{transfer_nft, transfer_sol, unfreeze_nft, get_fee_amount, parse_remaining_accounts},
+    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft, transfer_sol, unfreeze_nft},
 };
 
 #[derive(Accounts)]
@@ -88,7 +88,7 @@ pub struct FillSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-//remaining accounts 
+//remaining accounts
 // 0 token_record,
 // 1 authorization_rules,
 // 2 authorization_rules_program,
@@ -101,7 +101,10 @@ pub struct FillSellOrder<'info> {
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
-    let parsed_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+    let parsed_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+    );
 
     let pnft_params = parsed_accounts.pnft_params;
 
@@ -145,7 +148,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             signer_seeds,
             ctx.accounts.order.price,
         )?;
-
     }
 
     // unfreeze nft first so that a transfer can be made
@@ -206,8 +208,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     // edit wallet account to decrease balance and active bids
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
-
-
 
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());
