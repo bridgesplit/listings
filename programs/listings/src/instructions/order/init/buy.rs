@@ -43,9 +43,15 @@ pub struct InitBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+
 //remaining accounts
-//0 ovol nft ta
-//1 ovol nft metadata
+// 0 token_record or default,
+// 1 authorization_rules or default,
+// 2 authorization_rules_program or default,
+// 3 ovol nft ta [optional]
+// 4 ovol nft metadata [optional]
+
+
 
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
     msg!("Initialize a new buy order: {}", ctx.accounts.order.key());

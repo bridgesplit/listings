@@ -12,7 +12,7 @@ use crate::state::{Order, PROTOCOL_FEES_BPS};
 use bridgesplit_program_utils::{
     bridgesplit_transfer, delegate_and_freeze, pnft::utils::PnftParams, thaw_and_revoke,
     BridgesplitTransfer, DelegateAndFreeze, ExtraDelegateParams, ExtraRevokeParams,
-    ExtraTransferParams, ThawAndRevoke,
+    ExtraTransferParams, ThawAndRevoke
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -144,6 +144,15 @@ pub fn unfreeze_nft<'info>(
     )
 }
 
+fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
+    PnftParams {
+        token_record: ra.get(0).cloned(),
+        authorization_rules: ra.get(1).cloned(),
+        authorization_rules_program: ra.get(2).cloned(),
+        authorization_data: None,
+    }
+}
+
 /// transfer sol
 /// amount in lamports
 pub fn transfer_sol<'info>(
@@ -165,14 +174,6 @@ pub fn transfer_sol<'info>(
     .map_err(Into::into)
 }
 
-pub fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
-    PnftParams {
-        token_record: ra.get(0).cloned(),
-        authorization_rules: ra.get(1).cloned(),
-        authorization_rules_program: ra.get(2).cloned(),
-        authorization_data: None,
-    }
-}
 
 pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
     let ovol_nft_ta_account_info = remaining_accounts.get(0);
@@ -211,17 +212,33 @@ pub struct ParsedRemainingAccounts<'info> {
     pub fees_on: bool,
 }
 
+
+fn parse_pnft_accounts(remaining_accounts: Vec<AccountInfo>) -> PnftParams {
+
+    let account_0 = remaining_accounts.get(0).unwrap();
+
+    if account_0.key == &Pubkey::default() {
+        return PnftParams {
+            authorization_data: None,
+            authorization_rules: None,
+            authorization_rules_program: None,
+            token_record: None
+        }
+
+    } else {
+        return get_pnft_params(remaining_accounts);
+    }
+   
+}
+
 pub fn parse_remaining_accounts(
     remaining_accounts: Vec<AccountInfo>,
     initializer: Pubkey,
 ) -> ParsedRemainingAccounts {
-    let fees_on = !check_ovol_holder(remaining_accounts.to_vec(), initializer);
-    //if ovol holder then 2-5 are pnft params
-    let pnft_params = if fees_on {
-        get_pnft_params(remaining_accounts[2..].to_vec())
-    } else {
-        get_pnft_params(remaining_accounts.to_vec())
-    };
+    //first 3 are either default pubkeys or pnft accounts
+    let pnft_params  = parse_pnft_accounts(remaining_accounts.clone());
+    // last 2 either don't exist or are ovol accounts
+    let fees_on = check_ovol_holder(remaining_accounts[3..].to_vec(), initializer);
     ParsedRemainingAccounts {
         pnft_params,
         fees_on,

@@ -78,11 +78,12 @@ pub struct InitSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 //remaining accounts
-// 0 ovol nft ta
-// 1 ovol nft metadata
-// 2 token_record,
-// 4 authorization_rules,
-// 5 authorization_rules_program,
+// 0 token_record or default,
+// 1 authorization_rules or default,
+// 2 authorization_rules_program or default,
+// 3 ovol nft ta [optional]
+// 4 ovol nft metadata [optional]
+
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
