@@ -66,6 +66,7 @@ pub fn freeze_nft<'info>(
     mpl_token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
     delegate_params: ExtraDelegateParams<'info>,
+    is_pnft: bool,
     freeze_params: PnftParams<'info>,
 ) -> Result<(), anchor_lang::prelude::Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
@@ -85,7 +86,13 @@ pub fn freeze_nft<'info>(
         sysvar_instructions: sysvar_instructions.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    delegate_and_freeze(cpi_ctx, signer_seeds, delegate_params, freeze_params)
+    delegate_and_freeze(
+        cpi_ctx,
+        is_pnft,
+        signer_seeds,
+        delegate_params,
+        freeze_params,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

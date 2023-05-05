@@ -3,7 +3,9 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{state::Metadata, ExtraRevokeParams, ExtraTransferParams};
+use bridgesplit_program_utils::{
+    pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams, ExtraTransferParams,
+};
 use mpl_token_metadata::instruction::RevokeArgs;
 use vault::{
     errors::SpecificErrorCode,
@@ -103,31 +105,33 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     }
 
     // unfreeze nft first so that a transfer can be made
-    unfreeze_nft(
-        ctx.accounts.seller.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.seller_nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.sysvar_instructions.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        false,
-        signer_seeds,
-        ExtraRevokeParams {
-            master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
-            delegate_record: pnft_params.token_record.clone(),
-            token_record: pnft_params.token_record.clone(),
-            authorization_rules_program: pnft_params.authorization_rules_program.clone(),
-            authorization_rules: pnft_params.authorization_rules.clone(),
-            delegate_args: RevokeArgs::StandardV1,
-        },
-        pnft_params.clone(),
-    )?;
+    if !get_is_pnft(&ctx.accounts.nft_metadata) {
+        unfreeze_nft(
+            ctx.accounts.seller.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.seller_nft_ta.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            false,
+            signer_seeds,
+            ExtraRevokeParams {
+                master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
+                delegate_record: pnft_params.token_record.clone(),
+                token_record: pnft_params.token_record.clone(),
+                authorization_rules_program: pnft_params.authorization_rules_program.clone(),
+                authorization_rules: pnft_params.authorization_rules.clone(),
+                delegate_args: RevokeArgs::SaleV1,
+            },
+            pnft_params.clone(),
+        )?;
+    }
 
     // transfer nft
     transfer_nft(
