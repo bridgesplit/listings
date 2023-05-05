@@ -603,6 +603,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#e7392ef4a5e22d92e1f41ba22fc6597eb9255dd8"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1444,7 +1445,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata"
 version = "1.11.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1473,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata-context-derive"
 version = "0.2.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -1494,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#2a335e61319dc335384dbc8a4620037878c80eb5"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1995,9 +1996,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.160"
+version = "1.0.162"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb2f3770c8bce3bcda7e149193a069a0f4365bda1fa5cd88e03bca26afc1216c"
+checksum = "71b2f6e1ab5c2b98c05f0f35b236b22e8df7ead6ffbf51d7808da7f8817e7ab6"
 dependencies = [
  "serde_derive",
 ]
@@ -2013,9 +2014,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.160"
+version = "1.0.162"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291a097c63d8497e00160b166a967a4a79c64f3facdd01cbd7502231688d77df"
+checksum = "a2a0814352fd64b58489904a44ea8d90cb1a91dcb6b4f5ebabc32c8318e93cb6"
 dependencies = [
  "proc-macro2",
  "quote",
