@@ -85,9 +85,10 @@ pub struct FillBuyOrder<'info> {
 }
 
 //remaining accounts
-// 0 token_record or default,
+// 0 buyer_token_record or default,
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
+// 3 seller_token_record
 // 3 ovol nft ta [optional]
 // 4 ovol nft metadata [optional]
 
@@ -98,6 +99,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
+        Some(1)
     );
 
     let pnft_params = parsed_accounts.pnft_params;
@@ -105,6 +107,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     // edit wallet account to decrease balance
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
+
+    let owner_token_record = if  ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+        None 
+    } else {
+        ctx.remaining_accounts.get(3).cloned()
+
+    };
 
     // transfer nft
     transfer_nft(
@@ -123,7 +132,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            owner_token_record: ctx.remaining_accounts.get(3).cloned(),
+            owner_token_record,
             dest_token_record: pnft_params.token_record,
             authorization_rules: pnft_params.authorization_rules,
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),

@@ -242,11 +242,13 @@ pub fn parse_remaining_accounts(
     remaining_accounts: Vec<AccountInfo>,
     initializer: Pubkey,
     potential_existing_delegate: bool, //if there is a chance a delegate exista and can interfere
+    extra_pnft_accounts: Option<usize>, //if there are extrap nfts tacked onto the end
 ) -> ParsedRemainingAccounts {
     let mut account_index = 0;
     //first 3 are either default pubkeys or pnft accounts
     let pnft_params = parse_pnft_accounts(remaining_accounts.clone());
     account_index += 3;
+    account_index += extra_pnft_accounts.unwrap_or(0);
     //next 2 are existing delegate if possible
     let existing_delegate_params = if potential_existing_delegate {
         account_index += 2;

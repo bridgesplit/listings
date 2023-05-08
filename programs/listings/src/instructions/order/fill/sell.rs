@@ -106,7 +106,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
+        Some(1)
     );
+
+    let dest_token_record = if  ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+        None 
+    } else {
+        ctx.remaining_accounts.get(3).cloned()
+    };
 
     let pnft_params = parsed_accounts.pnft_params;
 
@@ -198,7 +205,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            dest_token_record: ctx.remaining_accounts.get(3).cloned(),
+            dest_token_record,
             owner_token_record: pnft_params.token_record.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),

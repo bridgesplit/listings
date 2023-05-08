@@ -72,6 +72,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
+        None
     );
 
     let pnft_params = parsed_remaining_accounts.pnft_params;
