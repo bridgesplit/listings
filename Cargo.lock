@@ -575,6 +575,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridgesplit-anchor-spl"
+version = "0.1.0"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#e1e551a85ae2b31301409d94658adb49683eee0a"
+dependencies = [
+ "anchor-spl",
+]
+
+[[package]]
 name = "bridgesplit-paid-claim-approver"
 version = "1.4.9"
 source = "git+ssh://git@github.com/bridgesplit/bridgesplit-token-controller.git#6bacced109fe6ce56ee0d6203ab5424c5c60323b"
@@ -603,7 +611,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#e7392ef4a5e22d92e1f41ba22fc6597eb9255dd8"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#e1e551a85ae2b31301409d94658adb49683eee0a"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1309,8 +1317,7 @@ dependencies = [
 name = "listings"
 version = "0.1.0"
 dependencies = [
- "anchor-lang",
- "anchor-spl",
+ "bridgesplit-anchor-spl",
  "bridgesplit-program-utils",
  "cargo-husky",
  "mpl-token-metadata 1.10.0",

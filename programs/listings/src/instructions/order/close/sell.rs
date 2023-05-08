@@ -1,3 +1,4 @@
+use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use anchor_lang::{solana_program::sysvar, Key};
 use anchor_spl::{
@@ -9,10 +10,7 @@ use mpl_token_metadata::instruction::RevokeArgs;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::utils::parse_remaining_accounts;
-use crate::{
-    state::*,
-    utils::unfreeze_nft,
-};
+use crate::{state::*, utils::unfreeze_nft};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -70,7 +68,10 @@ pub struct CloseSellOrder<'info> {
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) -> ProgramResult {
     msg!("Close sell order account: {}", ctx.accounts.order.key());
 
-    let parsed_remaining_accounts = parse_remaining_accounts(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+    let parsed_remaining_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+    );
 
     let pnft_params = parsed_remaining_accounts.pnft_params;
 

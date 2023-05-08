@@ -1,3 +1,4 @@
+use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use vault::utils::get_bump_in_seed_form;
 

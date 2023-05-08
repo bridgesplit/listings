@@ -1,3 +1,4 @@
+use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::prelude::*;
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone)]
