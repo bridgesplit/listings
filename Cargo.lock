@@ -611,6 +611,20 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git?branch=staging#2b7df594b55dfcfb823e2e4e2b5915cb6c23830f"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "mpl-token-auth-rules",
+ "mpl-token-metadata 1.10.0",
+ "num_enum",
+ "solana-program",
+ "winnow",
+]
+
+[[package]]
+name = "bridgesplit-program-utils"
+version = "0.1.0"
 source = "git+ssh://git@github.com/bridgesplit/program-utils.git#46fd733cded86af1e1e4125bf702d43fb953f10c"
 dependencies = [
  "anchor-lang",
@@ -1319,7 +1333,7 @@ name = "listings"
 version = "0.1.0"
 dependencies = [
  "bridgesplit-anchor-spl",
- "bridgesplit-program-utils",
+ "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git?branch=staging)",
  "cargo-husky",
  "mpl-token-metadata 1.10.0",
  "num_enum",
@@ -1881,7 +1895,7 @@ dependencies = [
  "anchor-lang",
  "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
- "bridgesplit-program-utils",
+ "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git)",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
  "num_enum",
@@ -1897,7 +1911,7 @@ source = "git+ssh://git@github.com/bridgesplit/rentals.git#4790597302a4d512dd9e4
 dependencies = [
  "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
- "bridgesplit-program-utils",
+ "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git)",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
  "num_enum",

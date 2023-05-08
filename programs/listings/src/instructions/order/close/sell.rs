@@ -5,7 +5,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{state::Metadata, ExtraRevokeParams, pnft::utils::get_is_pnft};
+use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams};
 use mpl_token_metadata::instruction::RevokeArgs;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
@@ -71,6 +71,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
     let parsed_remaining_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
+        false,
     );
 
     let pnft_params = parsed_remaining_accounts.pnft_params;

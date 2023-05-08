@@ -81,6 +81,8 @@ pub struct InitSellOrder<'info> {
 // 0 token_record or default,
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
+// 3 existing delegate or default,
+// 4 existing delegate record or default
 // 3 ovol nft ta [optional]
 // 4 ovol nft metadata [optional]
 
@@ -93,6 +95,7 @@ pub fn handler<'info>(
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
+        true,
     );
 
     let pnft_params = parsed_accounts.pnft_params;
@@ -148,8 +151,7 @@ pub fn handler<'info>(
                 amount: 1,
                 authorization_data: None,
             },
-            existing_delegate: None,
-            existing_delegate_record: None,
+            existing_delegate_params: parsed_accounts.existing_delegate_params,
         },
         pnft_params,
     )?;

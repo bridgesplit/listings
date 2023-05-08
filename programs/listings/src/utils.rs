@@ -6,7 +6,7 @@ use anchor_lang::{
     AccountDeserialize, ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
-use bridgesplit_program_utils::anchor_lang;
+use bridgesplit_program_utils::{anchor_lang, pnft::utils::ExistingDelegateParams};
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
@@ -183,6 +183,7 @@ pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) ->
                     if let Some(collection) = metadata.collection {
                         if (nft_ta.amount == 1)
                             && (nft_ta.owner == owner)
+                            && (nft_ta.mint == metadata.mint)
                             && collection.verified
                             && collection.key.to_string()
                                 == "9jnJWH9F9t1xAgw5RGwswVKY4GvY2RXhzLSJgpBAhoaR"
@@ -201,6 +202,8 @@ pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) ->
 pub struct ParsedRemainingAccounts<'info> {
     //params for pnft ix's
     pub pnft_params: PnftParams<'info>,
+    // params for removing existing delegate
+    pub existing_delegate_params: Option<ExistingDelegateParams<'info>>,
     // apply fee on listings
     pub fees_on: bool,
 }
@@ -220,15 +223,42 @@ fn parse_pnft_accounts(remaining_accounts: Vec<AccountInfo>) -> PnftParams {
     }
 }
 
+fn parse_existing_delegate_accounts(
+    remaining_accounts: Vec<AccountInfo>,
+) -> Option<ExistingDelegateParams> {
+    let account_0 = remaining_accounts.get(0).unwrap();
+
+    if account_0.key == &Pubkey::default() {
+        None
+    } else {
+        Some(ExistingDelegateParams {
+            existing_delegate: remaining_accounts.get(0).cloned().unwrap(),
+            existing_delegate_record: remaining_accounts.get(1).cloned().unwrap(),
+        })
+    }
+}
+
 pub fn parse_remaining_accounts(
     remaining_accounts: Vec<AccountInfo>,
     initializer: Pubkey,
+    potential_existing_delegate: bool, //if there is a chance a delegate exista and can interfere
 ) -> ParsedRemainingAccounts {
+    let mut account_index = 0;
     //first 3 are either default pubkeys or pnft accounts
     let pnft_params = parse_pnft_accounts(remaining_accounts.clone());
+    account_index += 3;
+    //next 2 are existing delegate if possible
+    let existing_delegate_params = if potential_existing_delegate {
+        account_index += 2;
+        parse_existing_delegate_accounts(remaining_accounts[account_index..].to_vec())
+    } else {
+        None
+    };
+
     // last 2 either don't exist or are ovol accounts
-    let fees_on = check_ovol_holder(remaining_accounts[3..].to_vec(), initializer);
+    let fees_on = check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer);
     ParsedRemainingAccounts {
+        existing_delegate_params,
         pnft_params,
         fees_on,
     }

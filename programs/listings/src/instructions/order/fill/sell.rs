@@ -105,6 +105,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
+        false,
     );
 
     let pnft_params = parsed_accounts.pnft_params;
