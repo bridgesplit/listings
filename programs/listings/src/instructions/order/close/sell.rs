@@ -4,7 +4,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{state::Metadata, ExtraRevokeParams};
+use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams};
 use mpl_token_metadata::instruction::RevokeArgs;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
@@ -79,6 +79,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
         bump,
     ][..]];
 
+    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+
     // unfreeze nft first
     unfreeze_nft(
         ctx.accounts.initializer.to_account_info(),
@@ -93,7 +95,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        true,
+        is_pnft,
         signer_seeds,
         ExtraRevokeParams {
             master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
@@ -101,7 +103,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
             token_record: pnft_params.token_record.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
-            delegate_args: RevokeArgs::SaleV1,
+            revoke_args: RevokeArgs::SaleV1,
         },
         pnft_params,
     )?;

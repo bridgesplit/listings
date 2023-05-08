@@ -7,8 +7,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use bridgesplit_program_utils::{
-    get_bump_in_seed_form, pnft::utils::get_is_pnft, state::Metadata, ExtraDelegateParams,
-    MplTokenMetadata,
+    get_bump_in_seed_form, state::Metadata, ExtraDelegateParams, MplTokenMetadata,
 };
 use mpl_token_metadata::instruction::DelegateArgs;
 use vault::state::{Appraisal, APPRAISAL_SEED};
@@ -109,8 +108,6 @@ pub fn handler<'info>(
         bump,
     ][..]];
 
-    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
-
     // freeze the nft of the seller with the bidding wallet account as the authority
     freeze_nft(
         ctx.accounts.initializer.to_account_info(),
@@ -138,8 +135,9 @@ pub fn handler<'info>(
                 amount: 1,
                 authorization_data: None,
             },
+            existing_delegate: None,
+            existing_delegate_record: None,
         },
-        is_pnft,
         pnft_params,
     )?;
 

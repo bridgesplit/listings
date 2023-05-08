@@ -127,7 +127,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
                 token_record: pnft_params.token_record.clone(),
                 authorization_rules_program: pnft_params.authorization_rules_program.clone(),
                 authorization_rules: pnft_params.authorization_rules.clone(),
-                delegate_args: RevokeArgs::SaleV1,
+                revoke_args: RevokeArgs::SaleV1,
             },
             pnft_params.clone(),
         )?;

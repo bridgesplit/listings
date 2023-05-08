@@ -575,6 +575,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridgesplit-anchor-spl"
+version = "0.1.0"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#46fd733cded86af1e1e4125bf702d43fb953f10c"
+dependencies = [
+ "anchor-spl",
+]
+
+[[package]]
 name = "bridgesplit-paid-claim-approver"
 version = "1.4.9"
 source = "git+ssh://git@github.com/bridgesplit/bridgesplit-token-controller.git#6bacced109fe6ce56ee0d6203ab5424c5c60323b"
@@ -603,12 +611,13 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#e7392ef4a5e22d92e1f41ba22fc6597eb9255dd8"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#46fd733cded86af1e1e4125bf702d43fb953f10c"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "mpl-token-auth-rules",
  "mpl-token-metadata 1.10.0",
+ "num_enum",
  "solana-program",
  "winnow",
 ]
@@ -1253,9 +1262,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.142"
+version = "0.2.143"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
+checksum = "edc207893e85c5d6be840e969b496b53d94cec8be2d501b214f50daa97fa8024"
 
 [[package]]
 name = "libsecp256k1"
@@ -1445,7 +1454,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata"
 version = "1.11.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#b3cb4dc97ad8c894530a14a9d13c354973a81b38"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1474,7 +1483,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata-context-derive"
 version = "0.2.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#b3cb4dc97ad8c894530a14a9d13c354973a81b38"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -1495,7 +1504,7 @@ dependencies = [
 [[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#26463392e831874a7efb6c12f9ea0b3346094225"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#b3cb4dc97ad8c894530a14a9d13c354973a81b38"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1868,14 +1877,14 @@ checksum = "a5996294f19bd3aae0453a862ad728f60e6600695733dd5df01da90c54363a3c"
 [[package]]
 name = "rental-auxilary"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/rentals.git#19b298968efc98748f51b2ec2775b20d1721f2a5"
+source = "git+ssh://git@github.com/bridgesplit/rentals.git#4790597302a4d512dd9e45d4e8ffe0748f550ebb"
 dependencies = [
  "anchor-lang",
- "anchor-spl",
+ "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
+ "bridgesplit-program-utils",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
- "mpl-token-metadata 1.10.0",
  "num_enum",
  "solana-program",
  "spl-associated-token-account",
@@ -1885,14 +1894,13 @@ dependencies = [
 [[package]]
 name = "rentals"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/rentals.git#19b298968efc98748f51b2ec2775b20d1721f2a5"
+source = "git+ssh://git@github.com/bridgesplit/rentals.git#4790597302a4d512dd9e45d4e8ffe0748f550ebb"
 dependencies = [
- "anchor-lang",
- "anchor-spl",
+ "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
+ "bridgesplit-program-utils",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
- "mpl-token-metadata 1.10.0",
  "num_enum",
  "rental-auxilary",
  "solana-program",
@@ -2094,9 +2102,9 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.10.7"
+version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54c2bb1a323307527314a36bfb73f24febb08ce2b8a554bf4ffd6f51ad15198c"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
  "digest 0.10.6",
  "keccak",
@@ -2293,7 +2301,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.6",
- "sha3 0.10.7",
+ "sha3 0.10.8",
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
  "solana-sdk-macro",
@@ -2345,7 +2353,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha2 0.10.6",
- "sha3 0.10.7",
+ "sha3 0.10.8",
  "solana-frozen-abi",
  "solana-frozen-abi-macro",
  "solana-logger",
