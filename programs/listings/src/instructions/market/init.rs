@@ -1,6 +1,6 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use anchor_spl::token::Mint;
+use bridgesplit_program_utils::anchor_lang;
 
 use crate::state::*;
 

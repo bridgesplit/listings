@@ -1,4 +1,3 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{
     prelude::*,
     solana_program::{entrypoint::ProgramResult, sysvar},
@@ -7,6 +6,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::anchor_lang;
 use bridgesplit_program_utils::{
     get_bump_in_seed_form, pnft::utils::get_is_pnft, state::Metadata, ExtraDelegateParams,
     MplTokenMetadata,

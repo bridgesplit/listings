@@ -1,5 +1,5 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 
 use crate::{state::*, utils::parse_remaining_accounts};
 

@@ -1,4 +1,3 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{
     prelude::{Account, AccountInfo, CpiContext, Error, Pubkey},
     solana_program::{
@@ -7,6 +6,7 @@ use anchor_lang::{
     AccountDeserialize, ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
+use bridgesplit_program_utils::anchor_lang;
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
