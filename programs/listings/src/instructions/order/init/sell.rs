@@ -59,8 +59,10 @@ pub struct InitSellOrder<'info> {
     pub appraisal: Box<Account<'info, Appraisal>>,
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(mut)]
     pub nft_metadata: Box<Account<'info, Metadata>>,
     /// CHECK: checked in cpi
+    #[account(mut)]
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
         mut,
