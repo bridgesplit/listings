@@ -188,6 +188,7 @@ pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) ->
                             && collection.key.to_string()
                                 == "9jnJWH9F9t1xAgw5RGwswVKY4GvY2RXhzLSJgpBAhoaR"
                         {
+                            crate::msg!("user is ovol holder");
                             return true;
                         }
                     }
@@ -195,6 +196,7 @@ pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) ->
             }
         }
     }
+    crate::msg!("user is not ovol holder");
     false
 }
 
@@ -262,7 +264,7 @@ pub fn parse_remaining_accounts(
 
     // last 2 either don't exist or are ovol accounts
     let fees_on = if account_index < remaining_accounts.len() {
-        check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer)
+        !check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer)
     } else {
         true
     };
