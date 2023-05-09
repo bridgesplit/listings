@@ -12,6 +12,7 @@ pub struct CloseBuyOrder<'info> {
         mut,
         constraint = order.owner == initializer.key(),
         constraint = Order::is_active(order.state),
+        // constraint = order.side == OrderSide::Buy.into() || order.side == OrderSide::CompressedBuy.into(),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
         order.market.as_ref(),

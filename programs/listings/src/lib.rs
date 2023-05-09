@@ -87,4 +87,41 @@ pub mod listings {
     ) -> ProgramResult {
         instructions::wallet::edit::handler(ctx, amount_change, increase)
     }
+
+    /// compressed instructions
+
+    pub fn compressed_init_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CompressedInitSellOrder<'info>>,
+        data: CompressedOrderData,
+    ) -> ProgramResult {
+        instructions::compressed::sell::init::handler(ctx, data)
+    }
+
+    pub fn compressed_fill_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
+        data: CompressedOrderData,
+    ) -> ProgramResult {
+        instructions::compressed::sell::fill::handler(ctx, data)
+    }
+
+    pub fn compressed_close_sell_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CompressedCloseSellOrder<'info>>,
+        data: CompressedOrderData,
+    ) -> ProgramResult {
+        instructions::compressed::sell::close::handler(ctx, data)
+    }
+
+    pub fn compressed_init_buy_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CompressedInitBuyOrder<'info>>,
+        data: InitOrderData,
+    ) -> ProgramResult {
+        instructions::compressed::buy::init::handler(ctx, data)
+    }
+
+    pub fn compressed_fill_buy_order<'info>(
+        ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
+        data: CompressedOrderData,
+    ) -> ProgramResult {
+        instructions::compressed::buy::fill::handler(ctx, data)
+    }
 }

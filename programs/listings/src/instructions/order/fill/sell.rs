@@ -7,10 +7,7 @@ use bridgesplit_program_utils::{
     pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams, ExtraTransferParams,
 };
 use mpl_token_metadata::instruction::RevokeArgs;
-use vault::{
-    errors::SpecificErrorCode,
-    utils::{get_bump_in_seed_form, MplTokenMetadata},
-};
+use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::{
     state::*,
@@ -99,11 +96,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     let nft_authority = ctx.accounts.wallet.to_account_info();
     let sol_holder = ctx.accounts.initializer.to_account_info();
 
-    // validate seller
-    if ctx.accounts.order.owner != ctx.accounts.seller.key() {
-        return Err(SpecificErrorCode::WrongAccount.into());
-    }
-
     // unfreeze nft first so that a transfer can be made
     if !get_is_pnft(&ctx.accounts.nft_metadata) {
         unfreeze_nft(
@@ -158,10 +150,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         },
         signer_seeds,
     )?;
-
-    // edit wallet account to decrease balance and active bids
-    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
-    Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     // transfer sol from buyer to seller
     transfer_sol(
