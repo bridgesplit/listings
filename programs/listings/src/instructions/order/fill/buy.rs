@@ -99,7 +99,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
-        Some(1)
+        Some(1),
     );
 
     let pnft_params = parsed_accounts.pnft_params;
@@ -108,12 +108,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
-    let owner_token_record = if  ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
-        None 
-    } else {
-        ctx.remaining_accounts.get(3).cloned()
-
-    };
+    let owner_token_record =
+        if ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+            None
+        } else {
+            ctx.remaining_accounts.get(3).cloned()
+        };
 
     // transfer nft
     transfer_nft(

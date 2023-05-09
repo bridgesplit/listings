@@ -96,7 +96,7 @@ pub fn handler<'info>(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         true,
-        None
+        None,
     );
 
     let pnft_params = parsed_accounts.pnft_params;

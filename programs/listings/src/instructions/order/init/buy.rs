@@ -58,7 +58,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
-        None
+        None,
     );
 
     // create a new order with size 1

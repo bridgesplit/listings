@@ -106,14 +106,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
         false,
-        Some(1)
+        Some(1),
     );
 
-    let dest_token_record = if  ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
-        None 
-    } else {
-        ctx.remaining_accounts.get(3).cloned()
-    };
+    let dest_token_record =
+        if ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+            None
+        } else {
+            ctx.remaining_accounts.get(3).cloned()
+        };
 
     let pnft_params = parsed_accounts.pnft_params;
 
