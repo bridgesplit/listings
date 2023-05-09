@@ -168,7 +168,7 @@ pub fn transfer_sol<'info>(
     .map_err(Into::into)
 }
 
-pub fn   check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
+pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
     let ovol_nft_ta_account_info = remaining_accounts.get(0);
     let ovol_nft_metadata_account_info = remaining_accounts.get(1);
 
@@ -250,13 +250,15 @@ pub fn parse_remaining_accounts(
     account_index += 3;
     account_index += extra_pnft_accounts.unwrap_or(0);
     //next 2 are existing delegate if possible
-    let existing_delegate_params = if potential_existing_delegate && account_index < remaining_accounts.len() {
-        let delegate_accounts = parse_existing_delegate_accounts(remaining_accounts[account_index..].to_vec());
-        account_index += 2;
-        delegate_accounts
-    } else {
-        None
-    };
+    let existing_delegate_params =
+        if potential_existing_delegate && account_index < remaining_accounts.len() {
+            let delegate_accounts =
+                parse_existing_delegate_accounts(remaining_accounts[account_index..].to_vec());
+            account_index += 2;
+            delegate_accounts
+        } else {
+            None
+        };
 
     // last 2 either don't exist or are ovol accounts
     let fees_on = if account_index < remaining_accounts.len() {

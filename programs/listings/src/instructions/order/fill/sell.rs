@@ -136,7 +136,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     if parsed_accounts.fees_on {
         let fee_amount = get_fee_amount(ctx.accounts.order.price);
         transfer_sol(
-            sol_holder,
+            sol_holder.clone(),
             ctx.accounts.treasury.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             signer_seeds,
@@ -144,8 +144,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         )?;
         // transfer sol from buyer to seller
         transfer_sol(
-            ctx.accounts.wallet.to_account_info(),
-            ctx.accounts.initializer.to_account_info(),
+            sol_holder,
+            ctx.accounts.seller.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             signer_seeds,
             ctx.accounts.order.price,
