@@ -76,6 +76,7 @@ pub struct FillSellOrder<'info> {
     pub buyer_nft_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: constraint
     #[account(
+        mut,
         constraint = treasury.key().to_string() == PROTOCOL_TREASURY
     )]
     pub treasury: AccountInfo<'info>,
