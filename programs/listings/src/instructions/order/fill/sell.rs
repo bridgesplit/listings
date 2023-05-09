@@ -106,6 +106,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
+        ctx.accounts.order.fees_on,
         false,
         Some(1),
     );

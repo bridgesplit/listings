@@ -57,6 +57,7 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
+        ctx.accounts.order.fees_on,
         false,
         None,
     );

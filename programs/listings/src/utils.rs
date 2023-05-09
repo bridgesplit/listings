@@ -243,6 +243,7 @@ fn parse_existing_delegate_accounts(
 pub fn parse_remaining_accounts(
     remaining_accounts: Vec<AccountInfo>,
     initializer: Pubkey,
+    fees_in_order: bool,
     potential_existing_delegate: bool, //if there is a chance a delegate exista and can interfere
     extra_pnft_accounts: Option<usize>, //if there are extrap nfts tacked onto the end
 ) -> ParsedRemainingAccounts {
@@ -266,7 +267,7 @@ pub fn parse_remaining_accounts(
     let fees_on = if account_index < remaining_accounts.len() {
         !check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer)
     } else {
-        true
+        fees_in_order
     };
     ParsedRemainingAccounts {
         existing_delegate_params,
