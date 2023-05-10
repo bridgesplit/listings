@@ -228,7 +228,9 @@ pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) ->
     let ovol_nft_metadata_account_info = remaining_accounts.get(1);
 
     if let Some(ovol_nft_ta) = ovol_nft_ta_account_info {
+        crate::msg!("ovol nft ta {}", ovol_nft_ta.key.to_string());
         if let Some(ovol_nft_metadata) = ovol_nft_metadata_account_info {
+            crate::msg!("ovol nft metadata {}", ovol_nft_metadata.key.to_string());
             if let Ok(nft_ta) =
                 TokenAccount::try_deserialize(&mut &ovol_nft_ta.data.borrow_mut()[..])
             {

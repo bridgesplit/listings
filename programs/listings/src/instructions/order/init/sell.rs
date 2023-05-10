@@ -100,7 +100,7 @@ pub fn handler<'info>(
         ctx.accounts.initializer.key(),
         true,
         true,
-        Some(1),
+        None,
     );
 
     let pnft_params = parsed_accounts.pnft_params;
