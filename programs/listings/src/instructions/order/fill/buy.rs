@@ -149,12 +149,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         let fee_amount = get_fee_amount(ctx.accounts.order.price);
         println!("fee amount {}", fee_amount);
         println!("price {}", ctx.accounts.order.price);
-            // transfer sol from buyer to seller
-            lamport_transfer(
-                    ctx.accounts.wallet.to_account_info(),
-                    ctx.accounts.initializer.to_account_info(),
-                    ctx.accounts.order.price.checked_sub(fee_amount).unwrap(),
-            )?;
+        // transfer sol from buyer to seller
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.order.price.checked_sub(fee_amount).unwrap(),
+        )?;
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.treasury.to_account_info(),
