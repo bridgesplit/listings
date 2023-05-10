@@ -12,7 +12,7 @@ use vault::{
 
 use crate::{
     state::*,
-    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft, transfer_sol, unfreeze_nft},
+    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft, transfer_sol, unfreeze_nft, pay_royalties},
 };
 
 #[derive(Accounts)]
@@ -93,8 +93,10 @@ pub struct FillSellOrder<'info> {
 // 2 authorization_rules_program or default,
 // 4 delegate record or default,
 // 5 buyer token record or default,
-// 6 ovol nft ta [optional]
-// 7 ovol nft metadata [optional]
+// 6 ovol nft ta or default
+// 7 ovol nft metadata or default
+// 8-13 optional creator accounts in order of metadata. Will error if is pnft and correct creator accounts are not present
+
 
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
@@ -222,6 +224,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.market.pool_mint,
         OrderEditType::Close,
     );
+
+    if is_pnft {
+        pay_royalties(ctx.accounts.order.price, ctx.accounts.nft_metadata.clone(), ctx.accounts.initializer.to_account_info(), parsed_accounts.creator_accounts)?;
+    }
 
     Ok(())
 }

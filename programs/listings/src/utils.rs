@@ -7,10 +7,13 @@ use anchor_lang::{
 };
 use anchor_spl::token::TokenAccount;
 use bridgesplit_program_utils::{
+    state::Metadata as BS_Metadata,
     anchor_lang, bridgesplit_delegate, bridgesplit_freeze, bridgesplit_revoke, bridgesplit_thaw,
     pnft::utils::ExistingDelegateParams, BridgesplitDelegate, BridgesplitFreeze, BridgesplitRevoke,
 };
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
+use vault::utils::lamport_transfer;
+use vault::utils::get_index_fee_bp;
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
 use bridgesplit_program_utils::{
@@ -267,6 +270,7 @@ pub struct ParsedRemainingAccounts<'info> {
     pub existing_delegate_params: Option<ExistingDelegateParams<'info>>,
     // apply fee on listings
     pub fees_on: bool,
+    pub creator_accounts: Vec<AccountInfo<'info>>,
 }
 
 fn parse_pnft_accounts(remaining_accounts: Vec<AccountInfo>) -> PnftParams {
@@ -346,11 +350,21 @@ pub fn parse_remaining_accounts(
         crate::msg!("using fees in order for fees on: {}", fees_in_order);
         fees_in_order
     };
+
+    account_index +=2;
+
+    let creator_accounts =  if account_index < remaining_accounts.len() {
+        remaining_accounts[account_index..].to_vec()   
+    } else {
+        Vec::new()
+    };
+
     ParsedRemainingAccounts {
         existing_delegate_params,
         delegate_record,
         pnft_params,
         fees_on,
+        creator_accounts
     }
 }
 
@@ -363,4 +377,37 @@ pub fn get_fee_amount(order_price: u64) -> u64 {
         .unwrap()
         .checked_div(10000)
         .unwrap()
+}
+
+
+
+pub fn pay_royalties<'info>(price: u64, metadata: Box<Account<'info, BS_Metadata>>, payer:AccountInfo<'info>, creator_accounts: Vec<AccountInfo<'info>>) -> Result<(), Error> {
+    let [_, royalties] =
+                get_index_fee_bp(price, metadata.data.seller_fee_basis_points.into())?;
+    if let Some(creators) = metadata.data.creators.clone() {
+        let mut indx = 0;
+        for creator in creators {
+            let creator_account_info = creator_accounts
+            .get(indx)
+            .unwrap()
+            .to_account_info();
+            if creator.share != 0 && creator_account_info.key == &creator.address {
+                let amount = royalties
+                    .checked_mul(creator.share.into())
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap();
+                lamport_transfer(
+                    payer.clone(),
+                    creator_accounts
+                        .get(indx)
+                        .unwrap()
+                        .to_account_info(),
+                    amount,
+                )?;
+                indx += 1;
+            }
+        }
+}
+        Ok(())
 }
