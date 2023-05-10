@@ -1,6 +1,6 @@
+use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::Key;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
 
 use crate::state::*;
 
@@ -13,6 +13,7 @@ pub struct CloseBuyOrder<'info> {
         mut,
         constraint = order.owner == initializer.key(),
         constraint = Order::is_active(order.state),
+        // constraint = order.side == OrderSide::Buy.into() || order.side == OrderSide::CompressedBuy.into(),
         seeds = [ORDER_SEED.as_ref(),
         order.nonce.as_ref(),
         order.market.as_ref(),

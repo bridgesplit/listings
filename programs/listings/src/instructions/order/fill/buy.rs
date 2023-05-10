@@ -199,13 +199,13 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint
         );
+        ctx.accounts.order.state = OrderState::Closed.into();
         Order::emit_event(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
-            OrderEditType::Close,
+            OrderEditType::Fill,
         );
-        ctx.accounts.order.state = OrderState::Closed.into();
         ctx.accounts
             .order
             .close(ctx.accounts.buyer.to_account_info())?;
@@ -214,7 +214,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
-            OrderEditType::Edit,
+            OrderEditType::Fill,
         );
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
