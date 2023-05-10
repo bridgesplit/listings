@@ -7,8 +7,8 @@ use anchor_lang::{
 };
 use anchor_spl::token::TokenAccount;
 use bridgesplit_program_utils::{
-    anchor_lang, bridgesplit_delegate, bridgesplit_revoke, bridgesplit_thaw,
-    pnft::utils::ExistingDelegateParams, BridgesplitDelegate, BridgesplitFreeze, BridgesplitRevoke, bridgesplit_freeze,
+    anchor_lang, bridgesplit_delegate, bridgesplit_freeze, bridgesplit_revoke, bridgesplit_thaw,
+    pnft::utils::ExistingDelegateParams, BridgesplitDelegate, BridgesplitFreeze, BridgesplitRevoke,
 };
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 
@@ -124,7 +124,6 @@ pub fn freeze_nft<'info>(
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
     bridgesplit_freeze(cpi_ctx, freeze_params)
 }
-
 
 #[allow(clippy::too_many_arguments)]
 pub fn revoke_nft<'info>(

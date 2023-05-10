@@ -15,7 +15,7 @@ use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
     state::*,
-    utils::{delegate_nft, parse_remaining_accounts, freeze_nft},
+    utils::{delegate_nft, freeze_nft, parse_remaining_accounts},
 };
 
 use super::InitOrderData;
@@ -159,24 +159,23 @@ pub fn handler<'info>(
             existing_delegate_params: parsed_accounts.existing_delegate_params,
         },
     )?;
-
     if !is_pnft {
-
         freeze_nft(
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.sysvar_instructions.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        signer_seeds,
-        pnft_params)?;
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.nft_ta.to_account_info(),
+            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            signer_seeds,
+            pnft_params,
+        )?;
     }
 
     Order::emit_event(
