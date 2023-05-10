@@ -98,7 +98,7 @@ pub fn handler<'info>(
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
         ctx.accounts.initializer.key(),
-        ctx.accounts.order.fees_on,
+        true,
         true,
         Some(1),
     );
