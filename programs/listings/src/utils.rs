@@ -6,14 +6,16 @@ use anchor_lang::{
     AccountDeserialize, ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
-use bridgesplit_program_utils::{anchor_lang, pnft::utils::ExistingDelegateParams, bridgesplit_delegate, BridgesplitDelegate, bridgesplit_revoke, BridgesplitRevoke, bridgesplit_thaw, BridgesplitFreeze};
+use bridgesplit_program_utils::{
+    anchor_lang, bridgesplit_delegate, bridgesplit_revoke, bridgesplit_thaw,
+    pnft::utils::ExistingDelegateParams, BridgesplitDelegate, BridgesplitFreeze, BridgesplitRevoke, bridgesplit_freeze,
+};
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
 use bridgesplit_program_utils::{
-    bridgesplit_transfer, pnft::utils::PnftParams,
-    BridgesplitTransfer, ExtraDelegateParams, ExtraRevokeParams,
-    ExtraTransferParams,
+    bridgesplit_transfer, pnft::utils::PnftParams, BridgesplitTransfer, ExtraDelegateParams,
+    ExtraRevokeParams, ExtraTransferParams,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -55,7 +57,6 @@ pub fn transfer_nft<'info>(
     bridgesplit_transfer(cpi_ctx, transfer_params, 1)
 }
 
-
 #[allow(clippy::too_many_arguments)]
 pub fn delegate_nft<'info>(
     authority: AccountInfo<'info>,
@@ -87,6 +88,42 @@ pub fn delegate_nft<'info>(
     bridgesplit_delegate(cpi_ctx, delegate_params, 1)
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn freeze_nft<'info>(
+    authority: AccountInfo<'info>,
+    payer: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
+    token: AccountInfo<'info>,
+    nft_metadata: AccountInfo<'info>,
+    nft_edition: AccountInfo<'info>,
+    delegate: AccountInfo<'info>,
+    system_program: AccountInfo<'info>,
+    sysvar_instructions: AccountInfo<'info>,
+    token_program: AccountInfo<'info>,
+    ata_program: AccountInfo<'info>,
+    mpl_token_metadata_program: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    freeze_params: PnftParams<'info>,
+) -> Result<(), anchor_lang::prelude::Error> {
+    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_accounts = BridgesplitFreeze {
+        authority: authority.to_account_info(),
+        payer: payer.to_account_info(),
+        mint: mint.to_account_info(),
+        metadata: nft_metadata.to_account_info(),
+        system_program: system_program.to_account_info(),
+        token_program: token_program.to_account_info(),
+        token: token.to_account_info(),
+        token_owner: authority.to_account_info(),
+        mpl_token_metadata: mpl_token_metadata_program.to_account_info(),
+        delegate: delegate.to_account_info(),
+        edition: nft_edition.clone(),
+        ata_program: ata_program.clone(),
+        instructions: sysvar_instructions.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+    bridgesplit_freeze(cpi_ctx, freeze_params)
+}
 
 
 #[allow(clippy::too_many_arguments)]
@@ -102,9 +139,8 @@ pub fn revoke_nft<'info>(
     token_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
-    revoke_params: ExtraRevokeParams<'info>
+    revoke_params: ExtraRevokeParams<'info>,
 ) -> Result<(), Error> {
-
     let cpi_program = mpl_token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitRevoke {
         authority: authority.to_account_info(),
@@ -119,7 +155,6 @@ pub fn revoke_nft<'info>(
     };
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
     bridgesplit_revoke(cpi_ctx, revoke_params)
-    
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -153,11 +188,10 @@ pub fn unfreeze_nft<'info>(
         edition: nft_edition.to_account_info(),
         mpl_token_metadata: mpl_token_metadata_program.clone(),
         instructions: sysvar_instructions.clone(),
-        ata_program: associated_token_program.clone()
+        ata_program: associated_token_program.clone(),
     };
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
     bridgesplit_thaw(cpi_ctx, delegate_params)
-    
 }
 
 fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
@@ -264,9 +298,7 @@ fn parse_existing_delegate_accounts(
     }
 }
 
-fn parse_delegate_record(
-    remaining_accounts: Vec<AccountInfo>,
-) -> Option<AccountInfo> {
+fn parse_delegate_record(remaining_accounts: Vec<AccountInfo>) -> Option<AccountInfo> {
     let account_0 = remaining_accounts.get(0).cloned().unwrap();
 
     if account_0.key == &Pubkey::default() {
@@ -275,8 +307,6 @@ fn parse_delegate_record(
         Some(account_0)
     }
 }
-
-
 
 pub fn parse_remaining_accounts(
     remaining_accounts: Vec<AccountInfo>,

@@ -9,7 +9,10 @@ use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, Extra
 use mpl_token_metadata::instruction::RevokeArgs;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
-use crate::{state::*, utils::{unfreeze_nft, parse_remaining_accounts, revoke_nft}};
+use crate::{
+    state::*,
+    utils::{parse_remaining_accounts, revoke_nft, unfreeze_nft},
+};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -114,28 +117,27 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
     } else {
         //revoke nft if pnft
         revoke_nft(
-            ctx.accounts.initializer.to_account_info(), 
-            ctx.accounts.initializer.to_account_info(), 
-            ctx.accounts.nft_mint.to_account_info(), 
-            ctx.accounts.nft_ta.to_account_info(), 
-            ctx.accounts.wallet.to_account_info(), 
-            ctx.accounts.nft_metadata.to_account_info(), 
-            ctx.accounts.system_program.to_account_info(), 
-            ctx.accounts.sysvar_instructions.to_account_info(), 
-            ctx.accounts.token_program.to_account_info(), 
-            ctx.accounts.mpl_token_metadata_program.to_account_info(), 
-            signer_seeds, 
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.nft_ta.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            signer_seeds,
             ExtraRevokeParams {
                 delegate_record: parsed_remaining_accounts.delegate_record,
                 master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
                 token_record: pnft_params.token_record,
                 authorization_rules: pnft_params.authorization_rules,
                 authorization_rules_program: pnft_params.authorization_rules_program,
-                revoke_args: RevokeArgs::SaleV1       
-            })?;
-
+                revoke_args: RevokeArgs::SaleV1,
+            },
+        )?;
     }
-    
 
     ctx.accounts.order.state = OrderState::Closed.into();
 

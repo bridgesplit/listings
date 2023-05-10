@@ -6,7 +6,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::anchor_lang;
+use bridgesplit_program_utils::{anchor_lang, pnft::utils::get_is_pnft};
 use bridgesplit_program_utils::{
     get_bump_in_seed_form, state::Metadata, ExtraDelegateParams, MplTokenMetadata,
 };
@@ -15,7 +15,7 @@ use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
     state::*,
-    utils::{parse_remaining_accounts, delegate_nft},
+    utils::{delegate_nft, parse_remaining_accounts, freeze_nft},
 };
 
 use super::InitOrderData;
@@ -129,6 +129,8 @@ pub fn handler<'info>(
         bump,
     ][..]];
 
+    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+
     // freeze the nft of the seller with the bidding wallet account as the authority
     delegate_nft(
         ctx.accounts.initializer.to_account_info(),
@@ -157,6 +159,25 @@ pub fn handler<'info>(
             existing_delegate_params: parsed_accounts.existing_delegate_params,
         },
     )?;
+
+    if !is_pnft {
+
+        freeze_nft(
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.nft_mint.to_account_info(),
+        ctx.accounts.nft_ta.to_account_info(),
+        ctx.accounts.nft_metadata.to_account_info(),
+        ctx.accounts.wallet.to_account_info(),
+        ctx.accounts.system_program.to_account_info(),
+        ctx.accounts.sysvar_instructions.to_account_info(),
+        ctx.accounts.token_program.to_account_info(),
+        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        ctx.accounts.associated_token_program.to_account_info(),
+        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        signer_seeds,
+        pnft_params)?;
+    }
 
     Order::emit_event(
         &mut ctx.accounts.order.clone(),

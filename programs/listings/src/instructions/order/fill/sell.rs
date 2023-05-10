@@ -4,9 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{
-    pnft::utils::get_is_pnft, state::Metadata, ExtraTransferParams,
-};
+use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraTransferParams};
 use vault::{
     errors::SpecificErrorCode,
     utils::{get_bump_in_seed_form, MplTokenMetadata},
