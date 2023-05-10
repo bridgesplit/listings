@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use anchor_lang::{
     prelude::{Account, AccountInfo, CpiContext, Error, Pubkey},
     solana_program::{
-        entrypoint::ProgramResult, program::{invoke_signed, invoke}, system_instruction::transfer,
+        entrypoint::ProgramResult,
+        program::{invoke, invoke_signed},
+        system_instruction::transfer,
     },
     AccountDeserialize, ToAccountInfo,
 };
@@ -15,7 +17,6 @@ use bridgesplit_program_utils::{
 };
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 use vault::utils::{get_index_fee_bp, lamport_transfer};
-
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
 use bridgesplit_program_utils::{
@@ -216,7 +217,6 @@ pub fn transfer_sol<'info>(
     signer_seeds: Option<&[&[&[u8]]; 1]>,
     amount: u64,
 ) -> ProgramResult {
-
     if let Some(seeds) = signer_seeds {
         invoke_signed(
             &transfer(from_account.key, to_account.key, amount),
@@ -238,9 +238,7 @@ pub fn transfer_sol<'info>(
             ],
         )
         .map_err(Into::into)
-
     }
-   
 }
 
 pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
@@ -403,9 +401,12 @@ pub fn pay_royalties<'info>(
     system_program: AccountInfo<'info>,
     creator_accounts: Vec<AccountInfo<'info>>,
     use_lamports_transfer: bool,
-    signer_seeds: Option<&[&[&[u8]]; 1]>
+    signer_seeds: Option<&[&[&[u8]]; 1]>,
 ) -> Result<(), Error> {
-    let creator_accounts_map: HashMap<Pubkey, AccountInfo<'info>> = creator_accounts.into_iter().map(|creator_account| (creator_account.key.clone(), creator_account)).collect();
+    let creator_accounts_map: HashMap<Pubkey, AccountInfo<'info>> = creator_accounts
+        .into_iter()
+        .map(|creator_account| (*creator_account.key, creator_account))
+        .collect();
     let [_, royalties] = get_index_fee_bp(price, metadata.data.seller_fee_basis_points.into())?;
     if let Some(creators) = metadata.data.creators.clone() {
         for creator in creators {
@@ -416,18 +417,26 @@ pub fn pay_royalties<'info>(
                     .checked_div(100)
                     .unwrap();
                 if use_lamports_transfer {
-                    lamport_transfer(payer.clone(), creator_accounts_map.get(&creator.address).unwrap().to_account_info(), amount)?;
+                    lamport_transfer(
+                        payer.clone(),
+                        creator_accounts_map
+                            .get(&creator.address)
+                            .unwrap()
+                            .to_account_info(),
+                        amount,
+                    )?;
                 } else {
                     transfer_sol(
                         payer.clone(),
-                        creator_accounts_map.get(&creator.address).unwrap().to_account_info(),
+                        creator_accounts_map
+                            .get(&creator.address)
+                            .unwrap()
+                            .to_account_info(),
                         system_program.clone(),
                         signer_seeds,
                         amount,
                     )?;
-
                 }
-                
             }
         }
     }

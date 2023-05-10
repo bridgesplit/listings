@@ -213,7 +213,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         signer_seeds,
     )?;
 
-
     if is_pnft {
         pay_royalties(
             ctx.accounts.order.price,
@@ -222,17 +221,15 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             ctx.accounts.system_program.to_account_info(),
             parsed_accounts.creator_accounts,
             false,
-            Some(signer_seeds)
+            Some(signer_seeds),
         )?;
     }
-
 
     // edit wallet account to decrease balance and active bids
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     // close order account
-   
 
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
@@ -242,7 +239,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.market.pool_mint,
         OrderEditType::Close,
     );
-
 
     Ok(())
 }

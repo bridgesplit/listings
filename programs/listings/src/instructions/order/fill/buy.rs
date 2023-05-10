@@ -219,7 +219,5 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 
-
-
     Ok(())
 }
