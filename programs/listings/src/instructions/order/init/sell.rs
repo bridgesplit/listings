@@ -15,7 +15,7 @@ use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
     state::*,
-    utils::{freeze_nft, parse_remaining_accounts},
+    utils::{parse_remaining_accounts, delegate_nft},
 };
 
 use super::InitOrderData;
@@ -83,10 +83,11 @@ pub struct InitSellOrder<'info> {
 // 0 token_record or default,
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
-// 3 existing delegate or default,
-// 4 existing delegate record or default
-// 3 ovol nft ta [optional]
-// 4 ovol nft metadata [optional]
+// 4 delegate record or default,
+// 5 existing delegate or default,
+// 6 existing delegate record or default
+// 7 ovol nft ta [optional]
+// 8 ovol nft metadata [optional]
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
@@ -99,7 +100,7 @@ pub fn handler<'info>(
         ctx.accounts.initializer.key(),
         ctx.accounts.order.fees_on,
         true,
-        None,
+        Some(1),
     );
 
     let pnft_params = parsed_accounts.pnft_params;
@@ -129,23 +130,21 @@ pub fn handler<'info>(
     ][..]];
 
     // freeze the nft of the seller with the bidding wallet account as the authority
-    freeze_nft(
+    delegate_nft(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.nft_mint.to_account_info(),
         ctx.accounts.nft_ta.to_account_info(),
         ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
         ctx.accounts.wallet.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
         ctx.accounts.sysvar_instructions.to_account_info(),
         ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         signer_seeds,
         ExtraDelegateParams {
             master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
-            delegate_record: pnft_params.token_record.clone(),
+            delegate_record: parsed_accounts.delegate_record.clone(),
             token_record: pnft_params.token_record.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
@@ -157,7 +156,6 @@ pub fn handler<'info>(
             },
             existing_delegate_params: parsed_accounts.existing_delegate_params,
         },
-        pnft_params,
     )?;
 
     Order::emit_event(

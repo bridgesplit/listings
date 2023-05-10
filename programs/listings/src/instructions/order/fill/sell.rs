@@ -5,9 +5,8 @@ use anchor_spl::{
 };
 use bridgesplit_program_utils::anchor_lang;
 use bridgesplit_program_utils::{
-    pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams, ExtraTransferParams,
+    pnft::utils::get_is_pnft, state::Metadata, ExtraTransferParams,
 };
-use mpl_token_metadata::instruction::RevokeArgs;
 use vault::{
     errors::SpecificErrorCode,
     utils::{get_bump_in_seed_form, MplTokenMetadata},
@@ -94,8 +93,9 @@ pub struct FillSellOrder<'info> {
 // 0 token_record or default,
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
-// 3 ovol nft ta [optional]
-// 4 ovol nft metadata [optional]
+// 4 delegate record or default,
+// 5 ovol nft ta [optional]
+// 6 ovol nft metadata [optional]
 
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
@@ -162,8 +162,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         )?;
     }
 
+    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+
     // unfreeze nft first so that a transfer can be made
-    if !get_is_pnft(&ctx.accounts.nft_metadata) {
+    if !is_pnft {
         unfreeze_nft(
             ctx.accounts.seller.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
@@ -177,16 +179,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.associated_token_program.to_account_info(),
             ctx.accounts.mpl_token_metadata_program.to_account_info(),
-            false,
             signer_seeds,
-            ExtraRevokeParams {
-                master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
-                delegate_record: pnft_params.token_record.clone(),
-                token_record: pnft_params.token_record.clone(),
-                authorization_rules_program: pnft_params.authorization_rules_program.clone(),
-                authorization_rules: pnft_params.authorization_rules.clone(),
-                revoke_args: RevokeArgs::SaleV1,
-            },
             pnft_params.clone(),
         )?;
     }

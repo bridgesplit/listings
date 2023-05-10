@@ -86,12 +86,12 @@ pub struct FillBuyOrder<'info> {
 }
 
 //remaining accounts
-// 0 buyer_token_record or default,
+// 0 token_record or default,
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
-// 3 seller_token_record
-// 3 ovol nft ta [optional]
-// 4 ovol nft metadata [optional]
+// 4 delegate record or default,
+// 5 ovol nft ta [optional]
+// 6 ovol nft metadata [optional]
 
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
