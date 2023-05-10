@@ -1,6 +1,5 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-
+use bridgesplit_program_utils::anchor_lang;
 
 mod instructions;
 pub mod state;
@@ -11,7 +10,7 @@ use instructions::*;
 // mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie - prod program id
 // tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa - staging program id
 
-declare_id!("sHXeg5G2UjvBjFSHsqYqsuYFUeuEnToQEZyFiDSE5Gb");
+declare_id!("tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa");
 
 #[program]
 pub mod listings {

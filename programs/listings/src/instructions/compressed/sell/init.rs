@@ -1,5 +1,5 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 
 use bridgesplit_program_utils::{
     compressed_transfer,
@@ -91,7 +91,10 @@ pub fn handler<'info>(
 ) -> ProgramResult {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
 
-    let fees_on = !check_ovol_holder(ctx.remaining_accounts.to_vec(), ctx.accounts.initializer.key());
+    let fees_on = !check_ovol_holder(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+    );
 
     // create a new order with size 1
     Order::init(
@@ -106,7 +109,7 @@ pub fn handler<'info>(
         1, // always 1
         data.price,
         OrderState::Ready.into(),
-        fees_on
+        fees_on,
     );
 
     ctx.accounts.transfer_compressed_nft(

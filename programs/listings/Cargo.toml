@@ -16,7 +16,7 @@ default = []
 
 [dependencies]
 winnow = "=0.4.1"
-bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git", branch="staging" }
+bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git", branch="staging" } #TODO: remove after most recent PR is merged
 anchor-spl = { git="ssh://git@github.com/bridgesplit/program-utils.git", package="bridgesplit-anchor-spl" }
 mpl-token-metadata = "=1.10.0"
 vault = { git="ssh://git@github.com/bridgesplit/bridgesplit-program.git", features=["no-entrypoint"] }

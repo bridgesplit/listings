@@ -1,5 +1,5 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::prelude::*;
+use bridgesplit_program_utils::anchor_lang;
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone)]
 pub struct CompressedOrderData {

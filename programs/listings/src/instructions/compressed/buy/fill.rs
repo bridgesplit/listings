@@ -1,5 +1,5 @@
-use bridgesplit_program_utils::anchor_lang as anchor_lang;
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 use bridgesplit_program_utils::{
     compressed_transfer,
     mpl_bubblegum::{cpi::accounts::Transfer, program::Bubblegum},
@@ -90,7 +90,6 @@ pub fn handler<'info>(
     // edit wallet account to decrease balance
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
-
 
     ctx.accounts.transfer_compressed_nft(
         data.root,
