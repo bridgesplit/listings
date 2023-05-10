@@ -111,7 +111,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
-    let owner_token_record =
+    let buyer_token_record =
         if ctx.remaining_accounts.get(4).cloned().unwrap().key() == Pubkey::default() {
             None
         } else {
@@ -135,8 +135,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            owner_token_record,
-            dest_token_record: pnft_params.token_record,
+            owner_token_record: pnft_params.token_record,
+            dest_token_record: buyer_token_record,
             authorization_rules: pnft_params.authorization_rules,
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_data: None,
