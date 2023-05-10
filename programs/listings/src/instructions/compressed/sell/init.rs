@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 
 use bridgesplit_program_utils::{
     compressed_transfer,
@@ -6,7 +7,7 @@ use bridgesplit_program_utils::{
 };
 use vault::state::{Appraisal, APPRAISAL_SEED};
 
-use crate::{instructions::compressed::CompressedOrderData, state::*};
+use crate::{instructions::compressed::CompressedOrderData, state::*, utils::check_ovol_holder};
 
 #[derive(Accounts)]
 #[instruction(data: CompressedOrderData)]
@@ -82,11 +83,18 @@ impl<'info> CompressedInitSellOrder<'info> {
     }
 }
 
+//remaining accts is ovols ta and ovols metadata
+
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedInitSellOrder<'info>>,
     data: CompressedOrderData,
 ) -> ProgramResult {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
+
+    let fees_on = !check_ovol_holder(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+    );
 
     // create a new order with size 1
     Order::init(
@@ -101,6 +109,7 @@ pub fn handler<'info>(
         1, // always 1
         data.price,
         OrderState::Ready.into(),
+        fees_on,
     );
 
     ctx.accounts.transfer_compressed_nft(

@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 
 mod instructions;
 pub mod state;

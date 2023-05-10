@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 use vault::utils::{get_bump_in_seed_form, lamport_transfer};
 
 use crate::{state::*, utils::transfer_sol};
@@ -43,7 +44,7 @@ pub fn handler(
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
+            Some(signer_seeds),
             amount_change,
         )?;
     } else {

@@ -3,15 +3,19 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{
-    pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams, ExtraTransferParams,
+use bridgesplit_program_utils::anchor_lang;
+use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraTransferParams};
+use vault::{
+    errors::SpecificErrorCode,
+    utils::{get_bump_in_seed_form, MplTokenMetadata},
 };
-use mpl_token_metadata::instruction::RevokeArgs;
-use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::{
     state::*,
-    utils::{get_pnft_params, transfer_nft, transfer_sol, unfreeze_nft},
+    utils::{
+        get_fee_amount, parse_remaining_accounts, pay_royalties, transfer_nft, transfer_sol,
+        unfreeze_nft,
+    },
 };
 
 #[derive(Accounts)]
@@ -70,6 +74,12 @@ pub struct FillSellOrder<'info> {
         associated_token::authority = initializer,
     )]
     pub buyer_nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     /// CHECK: checked by constraint and in cpi
@@ -80,12 +90,38 @@ pub struct FillSellOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+//remaining accounts
+// 0 token_record or default,
+// 1 authorization_rules or default,
+// 2 authorization_rules_program or default,
+// 4 delegate record or default,
+// 5 buyer token record or default,
+// 6 ovol nft ta or default
+// 7 ovol nft metadata or default
+// 8-13 optional creator accounts in order of metadata. Will error if is pnft and correct creator accounts are not present
+
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+
+    let parsed_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+        ctx.accounts.order.fees_on,
+        false,
+        Some(1),
+    );
+
+    let dest_token_record =
+        if ctx.remaining_accounts.get(4).cloned().unwrap().key() == Pubkey::default() {
+            None
+        } else {
+            ctx.remaining_accounts.get(4).cloned()
+        };
+
+    let pnft_params = parsed_accounts.pnft_params;
 
     let signer_seeds = &[&[
         WALLET_SEED.as_ref(),
@@ -96,8 +132,43 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     let nft_authority = ctx.accounts.wallet.to_account_info();
     let sol_holder = ctx.accounts.initializer.to_account_info();
 
+    // validate seller
+    if ctx.accounts.order.owner != ctx.accounts.seller.key() {
+        return Err(SpecificErrorCode::WrongAccount.into());
+    }
+
+    if parsed_accounts.fees_on {
+        let fee_amount = get_fee_amount(ctx.accounts.order.price);
+        transfer_sol(
+            sol_holder.clone(),
+            ctx.accounts.treasury.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            Some(signer_seeds),
+            fee_amount,
+        )?;
+        // transfer sol from buyer to seller
+        transfer_sol(
+            sol_holder,
+            ctx.accounts.seller.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            Some(signer_seeds),
+            ctx.accounts.order.price,
+        )?;
+    } else {
+        // transfer sol from buyer to seller
+        transfer_sol(
+            sol_holder,
+            ctx.accounts.seller.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            Some(signer_seeds),
+            ctx.accounts.order.price,
+        )?;
+    }
+
+    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+
     // unfreeze nft first so that a transfer can be made
-    if !get_is_pnft(&ctx.accounts.nft_metadata) {
+    if !is_pnft {
         unfreeze_nft(
             ctx.accounts.seller.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
@@ -111,16 +182,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.associated_token_program.to_account_info(),
             ctx.accounts.mpl_token_metadata_program.to_account_info(),
-            false,
             signer_seeds,
-            ExtraRevokeParams {
-                master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
-                delegate_record: pnft_params.token_record.clone(),
-                token_record: pnft_params.token_record.clone(),
-                authorization_rules_program: pnft_params.authorization_rules_program.clone(),
-                authorization_rules: pnft_params.authorization_rules.clone(),
-                revoke_args: RevokeArgs::SaleV1,
-            },
             pnft_params.clone(),
         )?;
     }
@@ -142,7 +204,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            dest_token_record: ctx.remaining_accounts.get(3).cloned(),
+            dest_token_record,
             owner_token_record: pnft_params.token_record.clone(),
             authorization_rules: pnft_params.authorization_rules.clone(),
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
@@ -151,16 +213,24 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         signer_seeds,
     )?;
 
-    // transfer sol from buyer to seller
-    transfer_sol(
-        sol_holder,
-        ctx.accounts.seller.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        signer_seeds,
-        ctx.accounts.order.price,
-    )?;
+    if is_pnft {
+        pay_royalties(
+            ctx.accounts.order.price,
+            ctx.accounts.nft_metadata.clone(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            parsed_accounts.creator_accounts,
+            false,
+            Some(signer_seeds),
+        )?;
+    }
+
+    // edit wallet account to decrease balance and active bids
+    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
+    Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     // close order account
+
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
     Order::emit_event(

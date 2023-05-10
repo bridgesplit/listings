@@ -3,16 +3,16 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::{anchor_lang, pnft::utils::get_is_pnft};
 use bridgesplit_program_utils::{state::Metadata, ExtraTransferParams, MplTokenMetadata};
 use vault::utils::lamport_transfer;
 
 use crate::{
     state::*,
-    utils::{get_pnft_params, transfer_nft},
+    utils::{get_fee_amount, parse_remaining_accounts, pay_royalties, transfer_nft},
 };
 
 #[derive(Accounts)]
-#[instruction()]
 pub struct FillBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -69,6 +69,12 @@ pub struct FillBuyOrder<'info> {
         associated_token::authority = buyer,
     )]
     pub buyer_nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     /// CHECK: checked by constraint and in cpi
@@ -79,14 +85,39 @@ pub struct FillBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+//remaining accounts
+// 0 token_record or default,
+// 1 authorization_rules or default,
+// 2 authorization_rules_program or default,
+// 4 delegate record or default,
+// 5 seller token record or default,
+// 6 ovol nft ta or default
+// 7 ovol nft metadata default
+// 8-13 optional creator accounts in order of metadata. Will error if is pnft and correct creator accounts are not present
+
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> Result<()> {
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+    let parsed_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+        ctx.accounts.order.fees_on,
+        false,
+        Some(1),
+    );
+
+    let pnft_params = parsed_accounts.pnft_params;
 
     // edit wallet account to decrease balance
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
+
+    let buyer_token_record =
+        if ctx.remaining_accounts.get(4).cloned().unwrap().key() == Pubkey::default() {
+            None
+        } else {
+            ctx.remaining_accounts.get(4).cloned()
+        };
 
     // transfer nft
     transfer_nft(
@@ -105,8 +136,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.associated_token_program.to_account_info(),
         ctx.accounts.mpl_token_metadata_program.to_account_info(),
         ExtraTransferParams {
-            owner_token_record: ctx.remaining_accounts.get(3).cloned(),
-            dest_token_record: pnft_params.token_record,
+            owner_token_record: pnft_params.token_record,
+            dest_token_record: buyer_token_record,
             authorization_rules: pnft_params.authorization_rules,
             authorization_rules_program: pnft_params.authorization_rules_program.clone(),
             authorization_data: None,
@@ -114,12 +145,27 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         &[],
     )?;
 
-    // transfer sol from buyer to seller
-    lamport_transfer(
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.order.price,
-    )?;
+    if parsed_accounts.fees_on {
+        let fee_amount = get_fee_amount(ctx.accounts.order.price);
+
+        // transfer sol from buyer to seller
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.order.price.checked_sub(fee_amount).unwrap(),
+        )?;
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.treasury.to_account_info(),
+            fee_amount,
+        )?;
+    } else {
+        lamport_transfer(
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.order.price,
+        )?;
+    }
 
     // edit order
     let price = ctx.accounts.order.price;
@@ -131,6 +177,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         size - 1,
         ctx.accounts.clock.unix_timestamp,
     );
+
+    if get_is_pnft(&ctx.accounts.nft_metadata) {
+        pay_royalties(
+            ctx.accounts.order.price,
+            ctx.accounts.nft_metadata.clone(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            parsed_accounts.creator_accounts,
+            true,
+            None,
+        )?;
+    }
 
     if size == 1 {
         // close order account

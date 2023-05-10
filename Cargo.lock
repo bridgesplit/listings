@@ -577,7 +577,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-anchor-spl"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#903d5bf851e99ed3c2a3d475fee78f4e371c6651"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#7b6ffa1d515e7a33e9dcfe7b94c2046041fde23f"
 dependencies = [
  "anchor-spl",
 ]
@@ -611,7 +611,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#903d5bf851e99ed3c2a3d475fee78f4e371c6651"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#7b6ffa1d515e7a33e9dcfe7b94c2046041fde23f"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1319,8 +1319,7 @@ dependencies = [
 name = "listings"
 version = "0.1.0"
 dependencies = [
- "anchor-lang",
- "anchor-spl",
+ "bridgesplit-anchor-spl",
  "bridgesplit-program-utils",
  "cargo-husky",
  "mpl-token-metadata 1.10.0",

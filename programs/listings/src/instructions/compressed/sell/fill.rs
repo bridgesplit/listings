@@ -1,4 +1,5 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use bridgesplit_program_utils::anchor_lang;
 use bridgesplit_program_utils::{
     compressed_transfer,
     mpl_bubblegum::{cpi::accounts::Transfer, program::Bubblegum},
@@ -112,7 +113,7 @@ pub fn handler<'info>(
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.seller.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
-        signer_seeds,
+        Some(signer_seeds),
         ctx.accounts.order.price,
     )?;
 

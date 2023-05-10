@@ -1,14 +1,27 @@
+use std::collections::HashMap;
+
 use anchor_lang::{
-    prelude::{AccountInfo, CpiContext},
+    prelude::{Account, AccountInfo, CpiContext, Error, Pubkey},
     solana_program::{
-        entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
+        entrypoint::ProgramResult,
+        program::{invoke, invoke_signed},
+        system_instruction::transfer,
     },
-    ToAccountInfo,
+    AccountDeserialize, ToAccountInfo,
 };
+use anchor_spl::token::TokenAccount;
 use bridgesplit_program_utils::{
-    bridgesplit_transfer, delegate_and_freeze, pnft::utils::PnftParams, thaw_and_revoke,
-    BridgesplitTransfer, DelegateAndFreeze, ExtraDelegateParams, ExtraRevokeParams,
-    ExtraTransferParams, ThawAndRevoke,
+    anchor_lang, bridgesplit_delegate, bridgesplit_freeze, bridgesplit_revoke, bridgesplit_thaw,
+    pnft::utils::ExistingDelegateParams, state::Metadata as BS_Metadata, BridgesplitDelegate,
+    BridgesplitFreeze, BridgesplitRevoke,
+};
+use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
+use vault::utils::{get_index_fee_bp, lamport_transfer};
+
+use crate::state::{Order, PROTOCOL_FEES_BPS};
+use bridgesplit_program_utils::{
+    bridgesplit_transfer, pnft::utils::PnftParams, BridgesplitTransfer, ExtraDelegateParams,
+    ExtraRevokeParams, ExtraTransferParams,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -51,6 +64,37 @@ pub fn transfer_nft<'info>(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub fn delegate_nft<'info>(
+    authority: AccountInfo<'info>,
+    payer: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
+    token: AccountInfo<'info>,
+    nft_metadata: AccountInfo<'info>,
+    delegate: AccountInfo<'info>,
+    system_program: AccountInfo<'info>,
+    sysvar_instructions: AccountInfo<'info>,
+    token_program: AccountInfo<'info>,
+    mpl_token_metadata_program: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    delegate_params: ExtraDelegateParams<'info>,
+) -> Result<(), anchor_lang::prelude::Error> {
+    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_accounts = BridgesplitDelegate {
+        authority: authority.to_account_info(),
+        payer: payer.to_account_info(),
+        mint: mint.to_account_info(),
+        metadata: nft_metadata.to_account_info(),
+        system_program: system_program.to_account_info(),
+        token_program: token_program.to_account_info(),
+        token: token.to_account_info(),
+        delegate: delegate.to_account_info(),
+        sysvar_instructions: sysvar_instructions.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+    bridgesplit_delegate(cpi_ctx, delegate_params, 1)
+}
+
+#[allow(clippy::too_many_arguments)]
 pub fn freeze_nft<'info>(
     authority: AccountInfo<'info>,
     payer: AccountInfo<'info>,
@@ -62,30 +106,60 @@ pub fn freeze_nft<'info>(
     system_program: AccountInfo<'info>,
     sysvar_instructions: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
-    associated_token_program: AccountInfo<'info>,
+    ata_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
-    delegate_params: ExtraDelegateParams<'info>,
     freeze_params: PnftParams<'info>,
 ) -> Result<(), anchor_lang::prelude::Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
-    let cpi_accounts = DelegateAndFreeze {
+    let cpi_accounts = BridgesplitFreeze {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
-        token_owner: authority.to_account_info(),
         mint: mint.to_account_info(),
         metadata: nft_metadata.to_account_info(),
-        edition: nft_edition.to_account_info(),
         system_program: system_program.to_account_info(),
         token_program: token_program.to_account_info(),
-        ata_program: associated_token_program.to_account_info(),
         token: token.to_account_info(),
+        token_owner: authority.to_account_info(),
+        mpl_token_metadata: mpl_token_metadata_program.to_account_info(),
         delegate: delegate.to_account_info(),
-        mpl_token_metadata_program,
+        edition: nft_edition.clone(),
+        ata_program: ata_program.clone(),
+        instructions: sysvar_instructions.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+    bridgesplit_freeze(cpi_ctx, freeze_params)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn revoke_nft<'info>(
+    authority: AccountInfo<'info>,
+    payer: AccountInfo<'info>,
+    mint: AccountInfo<'info>,
+    token: AccountInfo<'info>,
+    delegate: AccountInfo<'info>,
+    nft_metadata: AccountInfo<'info>,
+    system_program: AccountInfo<'info>,
+    sysvar_instructions: AccountInfo<'info>,
+    token_program: AccountInfo<'info>,
+    mpl_token_metadata_program: AccountInfo<'info>,
+    signer_seeds: &[&[&[u8]]],
+    revoke_params: ExtraRevokeParams<'info>,
+) -> Result<(), Error> {
+    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_accounts = BridgesplitRevoke {
+        authority: authority.to_account_info(),
+        payer: payer.to_account_info(),
+        token: token.to_account_info(),
+        mint: mint.to_account_info(),
+        metadata: nft_metadata.to_account_info(),
+        system_program: system_program.to_account_info(),
+        token_program: token_program.to_account_info(),
+        delegate: delegate.to_account_info(),
         sysvar_instructions: sysvar_instructions.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    delegate_and_freeze(cpi_ctx, signer_seeds, delegate_params, freeze_params)
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+    bridgesplit_revoke(cpi_ctx, revoke_params)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -102,35 +176,36 @@ pub fn unfreeze_nft<'info>(
     token_program: AccountInfo<'info>,
     associated_token_program: AccountInfo<'info>,
     mpl_token_metadata_program: AccountInfo<'info>,
-    revoke: bool,
     signer_seeds: &[&[&[u8]]],
-    freeze_params: ExtraRevokeParams<'info>,
     delegate_params: PnftParams<'info>,
-) -> Result<(), anchor_lang::prelude::Error> {
+) -> Result<(), Error> {
     let cpi_program = mpl_token_metadata_program.to_account_info();
-    let cpi_accounts = ThawAndRevoke {
+    let cpi_accounts = BridgesplitFreeze {
         authority: delegate.to_account_info(),
         payer: payer.to_account_info(),
-        token_owner: authority.to_account_info(),
         token: token.to_account_info(),
         mint: mint.to_account_info(),
         metadata: nft_metadata.to_account_info(),
-        edition: nft_edition.to_account_info(),
         system_program: system_program.to_account_info(),
         token_program: token_program.to_account_info(),
-        ata_program: associated_token_program.to_account_info(),
         delegate: delegate.to_account_info(),
-        mpl_token_metadata_program,
-        sysvar_instructions: sysvar_instructions.to_account_info(),
+        token_owner: authority.to_account_info(),
+        edition: nft_edition.to_account_info(),
+        mpl_token_metadata: mpl_token_metadata_program.clone(),
+        instructions: sysvar_instructions.clone(),
+        ata_program: associated_token_program.clone(),
     };
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    thaw_and_revoke(
-        cpi_ctx,
-        signer_seeds,
-        revoke,
-        delegate_params,
-        freeze_params,
-    )
+    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+    bridgesplit_thaw(cpi_ctx, delegate_params)
+}
+
+fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
+    PnftParams {
+        token_record: ra.get(0).cloned(),
+        authorization_rules: ra.get(1).cloned(),
+        authorization_rules_program: ra.get(2).cloned(),
+        authorization_data: None,
+    }
 }
 
 /// transfer sol
@@ -139,26 +214,231 @@ pub fn transfer_sol<'info>(
     from_account: AccountInfo<'info>,
     to_account: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
-    signer_seeds: &[&[&[u8]]; 1],
+    signer_seeds: Option<&[&[&[u8]]; 1]>,
     amount: u64,
 ) -> ProgramResult {
-    invoke_signed(
-        &transfer(from_account.key, to_account.key, amount),
-        &[
-            from_account.to_account_info(),
-            to_account.to_account_info(),
-            system_program.to_account_info(),
-        ],
-        signer_seeds,
-    )
-    .map_err(Into::into)
+    if let Some(seeds) = signer_seeds {
+        invoke_signed(
+            &transfer(from_account.key, to_account.key, amount),
+            &[
+                from_account.to_account_info(),
+                to_account.to_account_info(),
+                system_program.to_account_info(),
+            ],
+            seeds,
+        )
+        .map_err(Into::into)
+    } else {
+        invoke(
+            &transfer(from_account.key, to_account.key, amount),
+            &[
+                from_account.to_account_info(),
+                to_account.to_account_info(),
+                system_program.to_account_info(),
+            ],
+        )
+        .map_err(Into::into)
+    }
 }
 
-pub fn get_pnft_params(ra: Vec<AccountInfo>) -> PnftParams {
-    PnftParams {
-        token_record: ra.get(0).cloned(),
-        authorization_rules: ra.get(1).cloned(),
-        authorization_rules_program: ra.get(2).cloned(),
-        authorization_data: None,
+pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
+    let ovol_nft_ta_account_info = remaining_accounts.get(0);
+    let ovol_nft_metadata_account_info = remaining_accounts.get(1);
+
+    if let Some(ovol_nft_ta) = ovol_nft_ta_account_info {
+        crate::msg!("ovol nft ta {}", ovol_nft_ta.key.to_string());
+        if let Some(ovol_nft_metadata) = ovol_nft_metadata_account_info {
+            crate::msg!("ovol nft metadata {}", ovol_nft_metadata.key.to_string());
+            if let Ok(nft_ta) =
+                TokenAccount::try_deserialize(&mut &ovol_nft_ta.data.borrow_mut()[..])
+            {
+                if let Ok(metadata) =
+                    Metadata::safe_deserialize(&ovol_nft_metadata.data.borrow_mut()[..])
+                {
+                    if let Some(collection) = metadata.collection {
+                        if (nft_ta.amount == 1)
+                            && (nft_ta.owner == owner)
+                            && (nft_ta.mint == metadata.mint)
+                            && collection.verified
+                            && collection.key.to_string()
+                                == "9jnJWH9F9t1xAgw5RGwswVKY4GvY2RXhzLSJgpBAhoaR"
+                        {
+                            crate::msg!("user is ovol holder");
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
     }
+    crate::msg!("user is not ovol holder");
+    false
+}
+
+/// result of parsing remaining accounts
+pub struct ParsedRemainingAccounts<'info> {
+    //params for pnft ix's
+    pub pnft_params: PnftParams<'info>,
+    // delegate record if we're freezing/unfreezing
+    pub delegate_record: Option<AccountInfo<'info>>,
+    // params for removing existing delegate
+    pub existing_delegate_params: Option<ExistingDelegateParams<'info>>,
+    // apply fee on listings
+    pub fees_on: bool,
+    pub creator_accounts: Vec<AccountInfo<'info>>,
+}
+
+fn parse_pnft_accounts(remaining_accounts: Vec<AccountInfo>) -> PnftParams {
+    let account_0 = remaining_accounts.get(0).unwrap();
+
+    if account_0.key == &Pubkey::default() {
+        PnftParams {
+            authorization_data: None,
+            authorization_rules: None,
+            authorization_rules_program: None,
+            token_record: None,
+        }
+    } else {
+        get_pnft_params(remaining_accounts)
+    }
+}
+
+fn parse_existing_delegate_accounts(
+    remaining_accounts: Vec<AccountInfo>,
+) -> Option<ExistingDelegateParams> {
+    let account_0 = remaining_accounts.get(0).unwrap();
+
+    if account_0.key == &Pubkey::default() {
+        None
+    } else {
+        Some(ExistingDelegateParams {
+            existing_delegate: remaining_accounts.get(0).cloned().unwrap(),
+            existing_delegate_record: remaining_accounts.get(1).cloned().unwrap(),
+        })
+    }
+}
+
+fn parse_delegate_record(remaining_accounts: Vec<AccountInfo>) -> Option<AccountInfo> {
+    let account_0 = remaining_accounts.get(0).cloned().unwrap();
+
+    if account_0.key == &Pubkey::default() {
+        None
+    } else {
+        Some(account_0)
+    }
+}
+
+pub fn parse_remaining_accounts(
+    remaining_accounts: Vec<AccountInfo>,
+    initializer: Pubkey,
+    fees_in_order: bool,
+    potential_existing_delegate: bool, //if there is a chance a delegate exista and can interfere
+    extra_pnft_accounts: Option<usize>, //if there are extrap nfts tacked onto the end
+) -> ParsedRemainingAccounts {
+    let mut account_index = 0;
+    //first 3 are either default pubkeys or pnft accounts
+    let pnft_params = parse_pnft_accounts(remaining_accounts.clone());
+    account_index += 3;
+    account_index += extra_pnft_accounts.unwrap_or(0);
+    let delegate_record = if account_index < remaining_accounts.len() {
+        parse_delegate_record(remaining_accounts[account_index..].to_vec())
+    } else {
+        None
+    };
+    account_index += 1;
+    //next 2 are existing delegate if possible
+    let existing_delegate_params =
+        if potential_existing_delegate && account_index < remaining_accounts.len() {
+            let delegate_accounts =
+                parse_existing_delegate_accounts(remaining_accounts[account_index..].to_vec());
+            account_index += 2;
+            delegate_accounts
+        } else {
+            None
+        };
+
+    // last 2 either don't exist or are ovol accounts
+    let fees_on = if account_index < remaining_accounts.len() {
+        crate::msg!("checking ovol holder...");
+        !check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer)
+    } else {
+        crate::msg!("using fees in order for fees on: {}", fees_in_order);
+        fees_in_order
+    };
+
+    account_index += 2;
+
+    let creator_accounts = if account_index < remaining_accounts.len() {
+        remaining_accounts[account_index..].to_vec()
+    } else {
+        Vec::new()
+    };
+
+    ParsedRemainingAccounts {
+        existing_delegate_params,
+        delegate_record,
+        pnft_params,
+        fees_on,
+        creator_accounts,
+    }
+}
+
+pub fn get_fees_on(order: Box<Account<'_, Order>>, ovol_fees_on: bool) -> bool {
+    order.fees_on && ovol_fees_on
+}
+
+pub fn get_fee_amount(order_price: u64) -> u64 {
+    (order_price.checked_mul(PROTOCOL_FEES_BPS))
+        .unwrap()
+        .checked_div(10000)
+        .unwrap()
+}
+
+pub fn pay_royalties<'info>(
+    price: u64,
+    metadata: Box<Account<'info, BS_Metadata>>,
+    payer: AccountInfo<'info>,
+    system_program: AccountInfo<'info>,
+    creator_accounts: Vec<AccountInfo<'info>>,
+    use_lamports_transfer: bool,
+    signer_seeds: Option<&[&[&[u8]]; 1]>,
+) -> Result<(), Error> {
+    let creator_accounts_map: HashMap<Pubkey, AccountInfo<'info>> = creator_accounts
+        .into_iter()
+        .map(|creator_account| (*creator_account.key, creator_account))
+        .collect();
+    let [_, royalties] = get_index_fee_bp(price, metadata.data.seller_fee_basis_points.into())?;
+    if let Some(creators) = metadata.data.creators.clone() {
+        for creator in creators {
+            if creator.share != 0 {
+                let amount = royalties
+                    .checked_mul(creator.share.into())
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap();
+                if use_lamports_transfer {
+                    lamport_transfer(
+                        payer.clone(),
+                        creator_accounts_map
+                            .get(&creator.address)
+                            .unwrap()
+                            .to_account_info(),
+                        amount,
+                    )?;
+                } else {
+                    transfer_sol(
+                        payer.clone(),
+                        creator_accounts_map
+                            .get(&creator.address)
+                            .unwrap()
+                            .to_account_info(),
+                        system_program.clone(),
+                        signer_seeds,
+                        amount,
+                    )?;
+                }
+            }
+        }
+    }
+    Ok(())
 }

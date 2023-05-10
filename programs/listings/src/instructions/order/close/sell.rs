@@ -4,13 +4,14 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use bridgesplit_program_utils::anchor_lang;
 use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams};
 use mpl_token_metadata::instruction::RevokeArgs;
 use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
 
 use crate::{
     state::*,
-    utils::{get_pnft_params, unfreeze_nft},
+    utils::{parse_remaining_accounts, revoke_nft, unfreeze_nft},
 };
 
 #[derive(Accounts)]
@@ -66,10 +67,24 @@ pub struct CloseSellOrder<'info> {
     pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
 }
 
+//remaining accounts
+// 0 token_record or default,
+// 1 authorization_rules or default,
+// 2 authorization_rules_program or default,
+// 4 delegate record or default
+
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) -> ProgramResult {
     msg!("Close sell order account: {}", ctx.accounts.order.key());
 
-    let pnft_params = get_pnft_params(ctx.remaining_accounts.to_vec());
+    let parsed_remaining_accounts = parse_remaining_accounts(
+        ctx.remaining_accounts.to_vec(),
+        ctx.accounts.initializer.key(),
+        ctx.accounts.order.fees_on,
+        false,
+        None,
+    );
+
+    let pnft_params = parsed_remaining_accounts.pnft_params;
 
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
@@ -81,32 +96,48 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
 
     let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
 
-    // unfreeze nft first
-    unfreeze_nft(
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.nft_mint.to_account_info(),
-        ctx.accounts.nft_ta.to_account_info(),
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.nft_metadata.to_account_info(),
-        ctx.accounts.nft_edition.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.sysvar_instructions.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
-        is_pnft,
-        signer_seeds,
-        ExtraRevokeParams {
-            master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
-            delegate_record: pnft_params.token_record.clone(),
-            token_record: pnft_params.token_record.clone(),
-            authorization_rules_program: pnft_params.authorization_rules_program.clone(),
-            authorization_rules: pnft_params.authorization_rules.clone(),
-            revoke_args: RevokeArgs::SaleV1,
-        },
-        pnft_params,
-    )?;
+    // unfreeze nft if not pnft
+    if !is_pnft {
+        unfreeze_nft(
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.nft_ta.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.nft_edition.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            signer_seeds,
+            pnft_params.clone(),
+        )?;
+    } else {
+        //revoke nft if pnft
+        revoke_nft(
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.nft_mint.to_account_info(),
+            ctx.accounts.nft_ta.to_account_info(),
+            ctx.accounts.wallet.to_account_info(),
+            ctx.accounts.nft_metadata.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.sysvar_instructions.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            signer_seeds,
+            ExtraRevokeParams {
+                delegate_record: parsed_remaining_accounts.delegate_record,
+                master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
+                token_record: pnft_params.token_record,
+                authorization_rules: pnft_params.authorization_rules,
+                authorization_rules_program: pnft_params.authorization_rules_program,
+                revoke_args: RevokeArgs::SaleV1,
+            },
+        )?;
+    }
 
     ctx.accounts.order.state = OrderState::Closed.into();
 

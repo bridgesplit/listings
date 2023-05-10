@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use bridgesplit_program_utils::anchor_lang;
 use num_enum::IntoPrimitive;
 
 pub const ORDER_VERSION: u8 = 1;
@@ -31,8 +32,20 @@ pub struct Order {
     pub last_edit_time: i64,
     /// nft mint in case order is a sell order
     pub nft_mint: Pubkey,
+    /// fees on for this order
+    pub fees_on: bool,
+    /// reserved space for future changes split up due to serialization constraints
+    reserve_0: [u8; 256],
     /// reserved space for future changes
-    reserve: [u8; 512],
+    reserve_1: [u8; 128],
+    /// reserved space for future changes
+    reserve_2: [u8; 64],
+    /// reserved space for future changes
+    reserve_3: [u8; 30],
+    /// reserved space for future changes
+    reserve_4: [u8; 30],
+    /// reserved space for future changes
+    reserve_5: [u8; 3],
 }
 
 #[derive(IntoPrimitive)]
@@ -104,6 +117,7 @@ impl Order {
         size: u64,
         price: u64,
         state: u8,
+        fees_on: bool,
     ) {
         self.version = ORDER_VERSION;
         self.market = market;
@@ -117,6 +131,7 @@ impl Order {
         self.state = state;
         self.init_time = time;
         self.last_edit_time = time;
+        self.fees_on = fees_on;
     }
 
     /// edit a buy order account
