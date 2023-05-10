@@ -146,10 +146,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     )?;
 
     if parsed_accounts.fees_on {
-        println!("fees being applied...");
         let fee_amount = get_fee_amount(ctx.accounts.order.price);
-        println!("fee amount {}", fee_amount);
-        println!("price {}", ctx.accounts.order.price);
+
         // transfer sol from buyer to seller
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),

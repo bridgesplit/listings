@@ -577,7 +577,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-anchor-spl"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#903d5bf851e99ed3c2a3d475fee78f4e371c6651"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#7b6ffa1d515e7a33e9dcfe7b94c2046041fde23f"
 dependencies = [
  "anchor-spl",
 ]
@@ -611,22 +611,7 @@ dependencies = [
 [[package]]
 name = "bridgesplit-program-utils"
 version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git?branch=staging#e6d3ecbb6ea0cad5904737eb472a287e5440d3ea"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "mpl-bubblegum",
- "mpl-token-auth-rules",
- "mpl-token-metadata 1.10.0",
- "num_enum",
- "solana-program",
- "winnow",
-]
-
-[[package]]
-name = "bridgesplit-program-utils"
-version = "0.1.0"
-source = "git+ssh://git@github.com/bridgesplit/program-utils.git#903d5bf851e99ed3c2a3d475fee78f4e371c6651"
+source = "git+ssh://git@github.com/bridgesplit/program-utils.git#7b6ffa1d515e7a33e9dcfe7b94c2046041fde23f"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -1335,7 +1320,7 @@ name = "listings"
 version = "0.1.0"
 dependencies = [
  "bridgesplit-anchor-spl",
- "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git?branch=staging)",
+ "bridgesplit-program-utils",
  "cargo-husky",
  "mpl-token-metadata 1.10.0",
  "num_enum",
@@ -1912,7 +1897,7 @@ dependencies = [
  "anchor-lang",
  "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
- "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git)",
+ "bridgesplit-program-utils",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
  "num_enum",
@@ -1928,7 +1913,7 @@ source = "git+ssh://git@github.com/bridgesplit/rentals.git#4790597302a4d512dd9e4
 dependencies = [
  "bridgesplit-anchor-spl",
  "bridgesplit-paid-claim-approver",
- "bridgesplit-program-utils 0.1.0 (git+ssh://git@github.com/bridgesplit/program-utils.git)",
+ "bridgesplit-program-utils",
  "bridgesplit-time-invalidator",
  "bridgesplit-token-manager",
  "num_enum",
