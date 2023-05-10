@@ -1,19 +1,21 @@
+use std::collections::HashMap;
+
 use anchor_lang::{
     prelude::{Account, AccountInfo, CpiContext, Error, Pubkey},
     solana_program::{
-        entrypoint::ProgramResult, program::invoke_signed, system_instruction::transfer,
+        entrypoint::ProgramResult, program::{invoke_signed, invoke}, system_instruction::transfer,
     },
     AccountDeserialize, ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
 use bridgesplit_program_utils::{
-    state::Metadata as BS_Metadata,
     anchor_lang, bridgesplit_delegate, bridgesplit_freeze, bridgesplit_revoke, bridgesplit_thaw,
-    pnft::utils::ExistingDelegateParams, BridgesplitDelegate, BridgesplitFreeze, BridgesplitRevoke,
+    pnft::utils::ExistingDelegateParams, state::Metadata as BS_Metadata, BridgesplitDelegate,
+    BridgesplitFreeze, BridgesplitRevoke,
 };
 use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
-use vault::utils::lamport_transfer;
-use vault::utils::get_index_fee_bp;
+use vault::utils::{get_index_fee_bp, lamport_transfer};
+
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
 use bridgesplit_program_utils::{
@@ -211,19 +213,34 @@ pub fn transfer_sol<'info>(
     from_account: AccountInfo<'info>,
     to_account: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
-    signer_seeds: &[&[&[u8]]; 1],
+    signer_seeds: Option<&[&[&[u8]]; 1]>,
     amount: u64,
 ) -> ProgramResult {
-    invoke_signed(
-        &transfer(from_account.key, to_account.key, amount),
-        &[
-            from_account.to_account_info(),
-            to_account.to_account_info(),
-            system_program.to_account_info(),
-        ],
-        signer_seeds,
-    )
-    .map_err(Into::into)
+
+    if let Some(seeds) = signer_seeds {
+        invoke_signed(
+            &transfer(from_account.key, to_account.key, amount),
+            &[
+                from_account.to_account_info(),
+                to_account.to_account_info(),
+                system_program.to_account_info(),
+            ],
+            seeds,
+        )
+        .map_err(Into::into)
+    } else {
+        invoke(
+            &transfer(from_account.key, to_account.key, amount),
+            &[
+                from_account.to_account_info(),
+                to_account.to_account_info(),
+                system_program.to_account_info(),
+            ],
+        )
+        .map_err(Into::into)
+
+    }
+   
 }
 
 pub fn check_ovol_holder(remaining_accounts: Vec<AccountInfo>, owner: Pubkey) -> bool {
@@ -351,10 +368,10 @@ pub fn parse_remaining_accounts(
         fees_in_order
     };
 
-    account_index +=2;
+    account_index += 2;
 
-    let creator_accounts =  if account_index < remaining_accounts.len() {
-        remaining_accounts[account_index..].to_vec()   
+    let creator_accounts = if account_index < remaining_accounts.len() {
+        remaining_accounts[account_index..].to_vec()
     } else {
         Vec::new()
     };
@@ -364,7 +381,7 @@ pub fn parse_remaining_accounts(
         delegate_record,
         pnft_params,
         fees_on,
-        creator_accounts
+        creator_accounts,
     }
 }
 
@@ -379,35 +396,40 @@ pub fn get_fee_amount(order_price: u64) -> u64 {
         .unwrap()
 }
 
-
-
-pub fn pay_royalties<'info>(price: u64, metadata: Box<Account<'info, BS_Metadata>>, payer:AccountInfo<'info>, creator_accounts: Vec<AccountInfo<'info>>) -> Result<(), Error> {
-    let [_, royalties] =
-                get_index_fee_bp(price, metadata.data.seller_fee_basis_points.into())?;
+pub fn pay_royalties<'info>(
+    price: u64,
+    metadata: Box<Account<'info, BS_Metadata>>,
+    payer: AccountInfo<'info>,
+    system_program: AccountInfo<'info>,
+    creator_accounts: Vec<AccountInfo<'info>>,
+    use_lamports_transfer: bool,
+    signer_seeds: Option<&[&[&[u8]]; 1]>
+) -> Result<(), Error> {
+    let creator_accounts_map: HashMap<Pubkey, AccountInfo<'info>> = creator_accounts.into_iter().map(|creator_account| (creator_account.key.clone(), creator_account)).collect();
+    let [_, royalties] = get_index_fee_bp(price, metadata.data.seller_fee_basis_points.into())?;
     if let Some(creators) = metadata.data.creators.clone() {
-        let mut indx = 0;
         for creator in creators {
-            let creator_account_info = creator_accounts
-            .get(indx)
-            .unwrap()
-            .to_account_info();
-            if creator.share != 0 && creator_account_info.key == &creator.address {
+            if creator.share != 0 {
                 let amount = royalties
                     .checked_mul(creator.share.into())
                     .unwrap()
                     .checked_div(100)
                     .unwrap();
-                lamport_transfer(
-                    payer.clone(),
-                    creator_accounts
-                        .get(indx)
-                        .unwrap()
-                        .to_account_info(),
-                    amount,
-                )?;
-                indx += 1;
+                if use_lamports_transfer {
+                    lamport_transfer(payer.clone(), creator_accounts_map.get(&creator.address).unwrap().to_account_info(), amount)?;
+                } else {
+                    transfer_sol(
+                        payer.clone(),
+                        creator_accounts_map.get(&creator.address).unwrap().to_account_info(),
+                        system_program.clone(),
+                        signer_seeds,
+                        amount,
+                    )?;
+
+                }
+                
             }
         }
-}
-        Ok(())
+    }
+    Ok(())
 }

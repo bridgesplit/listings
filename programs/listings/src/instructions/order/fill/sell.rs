@@ -12,7 +12,10 @@ use vault::{
 
 use crate::{
     state::*,
-    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft, transfer_sol, unfreeze_nft, pay_royalties},
+    utils::{
+        get_fee_amount, parse_remaining_accounts, pay_royalties, transfer_nft, transfer_sol,
+        unfreeze_nft,
+    },
 };
 
 #[derive(Accounts)]
@@ -97,7 +100,6 @@ pub struct FillSellOrder<'info> {
 // 7 ovol nft metadata or default
 // 8-13 optional creator accounts in order of metadata. Will error if is pnft and correct creator accounts are not present
 
-
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
@@ -141,7 +143,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             sol_holder.clone(),
             ctx.accounts.treasury.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
+            Some(signer_seeds),
             fee_amount,
         )?;
         // transfer sol from buyer to seller
@@ -149,7 +151,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             sol_holder,
             ctx.accounts.seller.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
+            Some(signer_seeds),
             ctx.accounts.order.price,
         )?;
     } else {
@@ -158,7 +160,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             sol_holder,
             ctx.accounts.seller.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
+            Some(signer_seeds),
             ctx.accounts.order.price,
         )?;
     }
@@ -211,11 +213,27 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         signer_seeds,
     )?;
 
+
+    if is_pnft {
+        pay_royalties(
+            ctx.accounts.order.price,
+            ctx.accounts.nft_metadata.clone(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            parsed_accounts.creator_accounts,
+            false,
+            Some(signer_seeds)
+        )?;
+    }
+
+
     // edit wallet account to decrease balance and active bids
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     // close order account
+   
+
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
     Order::emit_event(
@@ -225,9 +243,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         OrderEditType::Close,
     );
 
-    if is_pnft {
-        pay_royalties(ctx.accounts.order.price, ctx.accounts.nft_metadata.clone(), ctx.accounts.initializer.to_account_info(), parsed_accounts.creator_accounts)?;
-    }
 
     Ok(())
 }

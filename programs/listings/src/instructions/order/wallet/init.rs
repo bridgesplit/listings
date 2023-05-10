@@ -38,7 +38,7 @@ pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
+            Some(signer_seeds),
             amount,
         )?;
     }

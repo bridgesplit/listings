@@ -9,7 +9,7 @@ use vault::utils::lamport_transfer;
 
 use crate::{
     state::*,
-    utils::{get_fee_amount, parse_remaining_accounts, transfer_nft, pay_royalties},
+    utils::{get_fee_amount, parse_remaining_accounts, pay_royalties, transfer_nft},
 };
 
 #[derive(Accounts)]
@@ -180,6 +180,18 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.clock.unix_timestamp,
     );
 
+    if get_is_pnft(&ctx.accounts.nft_metadata) {
+        pay_royalties(
+            ctx.accounts.order.price,
+            ctx.accounts.nft_metadata.clone(),
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            parsed_accounts.creator_accounts,
+            true,
+            None,
+        )?;
+    }
+
     if size == 1 {
         // close order account
         msg!(
@@ -207,9 +219,6 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 
-    if get_is_pnft(&ctx.accounts.nft_metadata) {
-        pay_royalties(ctx.accounts.order.price, ctx.accounts.nft_metadata.clone(), ctx.accounts.initializer.to_account_info(), parsed_accounts.creator_accounts)?;
-    }
 
 
     Ok(())
