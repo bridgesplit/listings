@@ -90,8 +90,9 @@ pub struct FillBuyOrder<'info> {
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
 // 4 delegate record or default,
-// 5 ovol nft ta [optional]
-// 6 ovol nft metadata [optional]
+// 5 seller token record or default,
+// 6 ovol nft ta [optional]
+// 7 ovol nft metadata [optional]
 
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
@@ -111,10 +112,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     let owner_token_record =
-        if ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+        if ctx.remaining_accounts.get(4).cloned().unwrap().key() == Pubkey::default() {
             None
         } else {
-            ctx.remaining_accounts.get(3).cloned()
+            ctx.remaining_accounts.get(4).cloned()
         };
 
     // transfer nft

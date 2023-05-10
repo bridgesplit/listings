@@ -338,8 +338,10 @@ pub fn parse_remaining_accounts(
 
     // last 2 either don't exist or are ovol accounts
     let fees_on = if account_index < remaining_accounts.len() {
+        crate::msg!("checking ovol holder...");
         !check_ovol_holder(remaining_accounts[account_index..].to_vec(), initializer)
     } else {
+        crate::msg!("using fees in order for fees on: {}", fees_in_order);
         fees_in_order
     };
     ParsedRemainingAccounts {

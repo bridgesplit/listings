@@ -92,8 +92,9 @@ pub struct FillSellOrder<'info> {
 // 1 authorization_rules or default,
 // 2 authorization_rules_program or default,
 // 4 delegate record or default,
-// 5 ovol nft ta [optional]
-// 6 ovol nft metadata [optional]
+// 5 buyer token record or default,
+// 6 ovol nft ta [optional]
+// 7 ovol nft metadata [optional]
 
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
@@ -110,10 +111,10 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     );
 
     let dest_token_record =
-        if ctx.remaining_accounts.get(3).cloned().unwrap().key() == Pubkey::default() {
+        if ctx.remaining_accounts.get(4).cloned().unwrap().key() == Pubkey::default() {
             None
         } else {
-            ctx.remaining_accounts.get(3).cloned()
+            ctx.remaining_accounts.get(4).cloned()
         };
 
     let pnft_params = parsed_accounts.pnft_params;
