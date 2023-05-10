@@ -40,6 +40,7 @@ pub struct Order {
 pub enum OrderEditType {
     Init,
     Edit,
+    Fill,
     Close,
 }
 
