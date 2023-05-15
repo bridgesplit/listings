@@ -6,7 +6,11 @@ use bridgesplit_program_utils::{
 };
 use vault::utils::get_bump_in_seed_form;
 
-use crate::{instructions::compressed::CompressedOrderData, state::*, utils::transfer_sol};
+use crate::{
+    instructions::compressed::CompressedOrderData,
+    state::*,
+    utils::{get_fee_amount, transfer_sol},
+};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -45,6 +49,12 @@ pub struct CompressedFillSellOrder<'info> {
         close = seller
     )]
     pub order: Box<Account<'info, Order>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
@@ -106,6 +116,17 @@ pub fn handler<'info>(
         data.creator_hash,
         data.nonce,
         data.index,
+    )?;
+
+    let fee_amount = get_fee_amount(ctx.accounts.order.price);
+
+    // transfer fee to treasury
+    transfer_sol(
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.treasury.to_account_info(),
+        ctx.accounts.system_program.to_account_info(),
+        Some(signer_seeds),
+        fee_amount,
     )?;
 
     // transfer sol from buyer to seller

@@ -154,6 +154,8 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.order.price.checked_sub(fee_amount).unwrap(),
         )?;
+
+        // pay platform fees
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.treasury.to_account_info(),

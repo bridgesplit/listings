@@ -225,12 +225,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         )?;
     }
 
-    // edit wallet account to decrease balance and active bids
-    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
-    Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
-
     // close order account
-
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
     Order::emit_event(
