@@ -10,7 +10,7 @@ use instructions::*;
 // mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie - prod program id
 // tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa - staging program id
 
-declare_id!("tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa");
+declare_id!("mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie");
 
 #[program]
 pub mod listings {
