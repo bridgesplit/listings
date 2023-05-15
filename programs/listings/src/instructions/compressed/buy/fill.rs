@@ -6,7 +6,7 @@ use bridgesplit_program_utils::{
 };
 use vault::utils::lamport_transfer;
 
-use crate::{instructions::compressed::CompressedOrderData, state::*};
+use crate::{instructions::compressed::CompressedOrderData, state::*, utils::get_fee_amount};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -44,6 +44,12 @@ pub struct CompressedFillBuyOrder<'info> {
         bump,
     )]
     pub order: Box<Account<'info, Order>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
@@ -104,6 +110,14 @@ pub fn handler<'info>(
         ctx.accounts.wallet.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.order.price,
+    )?;
+
+    let fee_amount = get_fee_amount(ctx.accounts.order.price);
+    // transfer fee to treasury
+    lamport_transfer(
+        ctx.accounts.wallet.to_account_info(),
+        ctx.accounts.treasury.to_account_info(),
+        fee_amount,
     )?;
 
     // edit order
