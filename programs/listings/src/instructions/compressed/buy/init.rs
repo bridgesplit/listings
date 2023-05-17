@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
 use bridgesplit_program_utils::anchor_lang;
 
-use crate::{instructions::order::InitOrderData, state::*, utils::check_ovol_holder};
+use crate::{instructions::order::InitOrderData, state::*};
 
 #[derive(Accounts)]
 #[instruction(data: InitOrderData)]
@@ -45,11 +45,6 @@ pub struct CompressedInitBuyOrder<'info> {
 pub fn handler(ctx: Context<CompressedInitBuyOrder>, data: InitOrderData) -> ProgramResult {
     msg!("Initialize a new buy order: {}", ctx.accounts.order.key());
 
-    let fees_on = !check_ovol_holder(
-        ctx.remaining_accounts.to_vec(),
-        ctx.accounts.initializer.key(),
-    );
-
     // create a new order with size 1
     Order::init(
         &mut ctx.accounts.order,
@@ -63,7 +58,7 @@ pub fn handler(ctx: Context<CompressedInitBuyOrder>, data: InitOrderData) -> Pro
         data.size,
         data.price,
         OrderState::Ready.into(),
-        fees_on,
+        true,
     );
 
     Order::emit_event(

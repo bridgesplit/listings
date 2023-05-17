@@ -7,7 +7,7 @@ use bridgesplit_program_utils::{
 };
 use vault::state::{Appraisal, APPRAISAL_SEED};
 
-use crate::{instructions::compressed::CompressedOrderData, state::*, utils::check_ovol_holder};
+use crate::{instructions::compressed::CompressedOrderData, state::*};
 
 #[derive(Accounts)]
 #[instruction(data: CompressedOrderData)]
@@ -49,6 +49,7 @@ pub struct CompressedInitSellOrder<'info> {
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
+    #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub log_wrapper: UncheckedAccount<'info>,
@@ -62,6 +63,7 @@ pub struct CompressedInitSellOrder<'info> {
 impl<'info> CompressedInitSellOrder<'info> {
     pub fn transfer_compressed_nft(
         &self,
+        ra: Vec<AccountInfo<'info>>,
         root: [u8; 32],
         data_hash: [u8; 32],
         creator_hash: [u8; 32],
@@ -78,7 +80,8 @@ impl<'info> CompressedInitSellOrder<'info> {
             compression_program: self.compression_program.to_account_info(),
             system_program: self.system_program.to_account_info(),
         };
-        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts);
+        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
+            .with_remaining_accounts(ra);
         compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
     }
 }
@@ -90,11 +93,6 @@ pub fn handler<'info>(
     data: CompressedOrderData,
 ) -> ProgramResult {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
-
-    let fees_on = !check_ovol_holder(
-        ctx.remaining_accounts.to_vec(),
-        ctx.accounts.initializer.key(),
-    );
 
     // create a new order with size 1
     Order::init(
@@ -109,14 +107,15 @@ pub fn handler<'info>(
         1, // always 1
         data.price,
         OrderState::Ready.into(),
-        fees_on,
+        true,
     );
 
     ctx.accounts.transfer_compressed_nft(
+        ctx.remaining_accounts.to_vec(),
         data.root,
         data.data_hash,
         data.creator_hash,
-        data.nonce,
+        data.index as u64,
         data.index,
     )?;
 

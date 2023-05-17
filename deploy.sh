@@ -1,1 +1,1 @@
-solana program deploy ./target/deploy/listings.so --program-id tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa --keypair ~/Downloads/mainnet_prod.json  
+solana program deploy ./target/deploy/listings.so --program-id mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie --keypair ~/Downloads/mainnet_prod.json  

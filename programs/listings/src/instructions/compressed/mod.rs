@@ -9,7 +9,6 @@ pub struct CompressedOrderData {
     pub root: [u8; 32],
     pub data_hash: [u8; 32],
     pub creator_hash: [u8; 32],
-    pub nonce: u64,
     pub index: u32,
 }
 
