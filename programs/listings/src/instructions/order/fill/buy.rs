@@ -219,5 +219,11 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 
+    Wallet::emit_event(
+        &mut ctx.accounts.wallet.clone(),
+        ctx.accounts.wallet.key(),
+        WalletEditType::Edit,
+    );
+
     Ok(())
 }
