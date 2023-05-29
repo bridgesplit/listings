@@ -81,7 +81,15 @@ impl<'info> CompressedCloseSellOrder<'info> {
             signer_seeds,
         )
         .with_remaining_accounts(ra);
-        compressed_transfer(ctx, root, data_hash, creator_hash, index as u64, index)
+        compressed_transfer(
+            ctx,
+            signer_seeds,
+            root,
+            data_hash,
+            creator_hash,
+            index as u64,
+            index,
+        )
     }
 }
 

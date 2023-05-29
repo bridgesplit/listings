@@ -82,7 +82,7 @@ impl<'info> CompressedInitSellOrder<'info> {
         };
         let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
             .with_remaining_accounts(ra);
-        compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
+        compressed_transfer(ctx, &[], root, data_hash, creator_hash, nonce, index)
     }
 }
 
@@ -103,7 +103,7 @@ pub fn handler<'info>(
         data.order_nonce,
         data.mint_id,
         ctx.accounts.clock.unix_timestamp,
-        OrderSide::CompressedSell.into(),
+        OrderSide::Sell.into(),
         1, // always 1
         data.price,
         OrderState::Ready.into(),

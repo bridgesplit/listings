@@ -84,10 +84,6 @@ pub enum OrderSide {
     Buy,
     /// bid for selling NFT
     Sell,
-    /// compressed buy
-    CompressedBuy,
-    /// compressed sell
-    CompressedSell,
 }
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq, IntoPrimitive)]

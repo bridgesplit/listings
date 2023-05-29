@@ -86,7 +86,7 @@ impl<'info> CompressedFillBuyOrder<'info> {
         };
         let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
             .with_remaining_accounts(ra);
-        compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
+        compressed_transfer(ctx, &[], root, data_hash, creator_hash, nonce, index)
     }
 }
 
