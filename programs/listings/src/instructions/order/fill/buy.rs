@@ -147,16 +147,16 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
     )?;
 
     if parsed_accounts.fees_on {
-        println!("fees being applied...");
         let fee_amount = get_fee_amount(ctx.accounts.order.price);
-        println!("fee amount {}", fee_amount);
-        println!("price {}", ctx.accounts.order.price);
+
         // transfer sol from buyer to seller
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.order.price.checked_sub(fee_amount).unwrap(),
         )?;
+
+        // pay platform fees
         lamport_transfer(
             ctx.accounts.wallet.to_account_info(),
             ctx.accounts.treasury.to_account_info(),
@@ -219,6 +219,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         );
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
+
+    Wallet::emit_event(
+        &mut ctx.accounts.wallet.clone(),
+        ctx.accounts.wallet.key(),
+        WalletEditType::Edit,
+    );
 
     Ok(())
 }

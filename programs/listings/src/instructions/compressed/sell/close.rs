@@ -44,6 +44,7 @@ pub struct CompressedCloseSellOrder<'info> {
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
+    #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub log_wrapper: UncheckedAccount<'info>,
@@ -57,11 +58,11 @@ pub struct CompressedCloseSellOrder<'info> {
 impl<'info> CompressedCloseSellOrder<'info> {
     pub fn transfer_compressed_nft(
         &self,
+        ra: Vec<AccountInfo<'info>>,
         signer_seeds: &[&[&[u8]]],
         root: [u8; 32],
         data_hash: [u8; 32],
         creator_hash: [u8; 32],
-        nonce: u64,
         index: u32,
     ) -> Result<()> {
         let cpi_accounts = Transfer {
@@ -78,8 +79,17 @@ impl<'info> CompressedCloseSellOrder<'info> {
             self.mpl_bubblegum.to_account_info(),
             cpi_accounts,
             signer_seeds,
-        );
-        compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
+        )
+        .with_remaining_accounts(ra);
+        compressed_transfer(
+            ctx,
+            signer_seeds,
+            root,
+            data_hash,
+            creator_hash,
+            index as u64,
+            index,
+        )
     }
 }
 
@@ -98,11 +108,11 @@ pub fn handler<'info>(
     ][..]];
 
     ctx.accounts.transfer_compressed_nft(
+        ctx.remaining_accounts.to_vec(),
         signer_seeds,
         data.root,
         data.data_hash,
         data.creator_hash,
-        data.nonce,
         data.index,
     )?;
 

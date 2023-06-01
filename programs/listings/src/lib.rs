@@ -10,7 +10,7 @@ use instructions::*;
 // mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie - prod program id
 // tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa - staging program id
 
-declare_id!("tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa");
+declare_id!("mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie");
 
 #[program]
 pub mod listings {
@@ -110,13 +110,6 @@ pub mod listings {
         data: CompressedOrderData,
     ) -> ProgramResult {
         instructions::compressed::sell::close::handler(ctx, data)
-    }
-
-    pub fn compressed_init_buy_order<'info>(
-        ctx: Context<'_, '_, '_, 'info, CompressedInitBuyOrder<'info>>,
-        data: InitOrderData,
-    ) -> ProgramResult {
-        instructions::compressed::buy::init::handler(ctx, data)
     }
 
     pub fn compressed_fill_buy_order<'info>(

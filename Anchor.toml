@@ -1,5 +1,5 @@
 [programs.mainnet]
-example = "sHXeg5G2UjvBjFSHsqYqsuYFUeuEnToQEZyFiDSE5Gb"
+example = "mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie"
 
 [registry]
 url = "https://anchor.projectserum.com"

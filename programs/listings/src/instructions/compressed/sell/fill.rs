@@ -6,7 +6,11 @@ use bridgesplit_program_utils::{
 };
 use vault::utils::get_bump_in_seed_form;
 
-use crate::{instructions::compressed::CompressedOrderData, state::*, utils::transfer_sol};
+use crate::{
+    instructions::compressed::CompressedOrderData,
+    state::*,
+    utils::{get_fee_amount, transfer_sol},
+};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -45,9 +49,16 @@ pub struct CompressedFillSellOrder<'info> {
         close = seller
     )]
     pub order: Box<Account<'info, Order>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
+    #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub log_wrapper: UncheckedAccount<'info>,
@@ -61,11 +72,11 @@ pub struct CompressedFillSellOrder<'info> {
 impl<'info> CompressedFillSellOrder<'info> {
     pub fn transfer_compressed_nft(
         &self,
+        ra: Vec<AccountInfo<'info>>,
         signer_seeds: &[&[&[u8]]],
         root: [u8; 32],
         data_hash: [u8; 32],
         creator_hash: [u8; 32],
-        nonce: u64,
         index: u32,
     ) -> Result<()> {
         let cpi_accounts = Transfer {
@@ -82,8 +93,17 @@ impl<'info> CompressedFillSellOrder<'info> {
             self.mpl_bubblegum.to_account_info(),
             cpi_accounts,
             signer_seeds,
-        );
-        compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
+        )
+        .with_remaining_accounts(ra);
+        compressed_transfer(
+            ctx,
+            signer_seeds,
+            root,
+            data_hash,
+            creator_hash,
+            index as u64,
+            index,
+        )
     }
 }
 
@@ -100,12 +120,23 @@ pub fn handler<'info>(
     ][..]];
 
     ctx.accounts.transfer_compressed_nft(
+        ctx.remaining_accounts.to_vec(),
         signer_seeds,
         data.root,
         data.data_hash,
         data.creator_hash,
-        data.nonce,
         data.index,
+    )?;
+
+    let fee_amount = get_fee_amount(ctx.accounts.order.price);
+
+    // transfer fee to treasury
+    transfer_sol(
+        ctx.accounts.initializer.to_account_info(),
+        ctx.accounts.treasury.to_account_info(),
+        ctx.accounts.system_program.to_account_info(),
+        Some(signer_seeds),
+        fee_amount,
     )?;
 
     // transfer sol from buyer to seller

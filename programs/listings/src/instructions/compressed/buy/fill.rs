@@ -6,7 +6,7 @@ use bridgesplit_program_utils::{
 };
 use vault::utils::lamport_transfer;
 
-use crate::{instructions::compressed::CompressedOrderData, state::*};
+use crate::{instructions::compressed::CompressedOrderData, state::*, utils::get_fee_amount};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -44,9 +44,16 @@ pub struct CompressedFillBuyOrder<'info> {
         bump,
     )]
     pub order: Box<Account<'info, Order>>,
+    /// CHECK: constraint
+    #[account(
+        mut,
+        constraint = treasury.key().to_string() == PROTOCOL_TREASURY
+    )]
+    pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
     pub tree_authority: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
+    #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub log_wrapper: UncheckedAccount<'info>,
@@ -60,6 +67,7 @@ pub struct CompressedFillBuyOrder<'info> {
 impl<'info> CompressedFillBuyOrder<'info> {
     pub fn transfer_compressed_nft(
         &self,
+        ra: Vec<AccountInfo<'info>>,
         root: [u8; 32],
         data_hash: [u8; 32],
         creator_hash: [u8; 32],
@@ -76,8 +84,9 @@ impl<'info> CompressedFillBuyOrder<'info> {
             compression_program: self.compression_program.to_account_info(),
             system_program: self.system_program.to_account_info(),
         };
-        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts);
-        compressed_transfer(ctx, root, data_hash, creator_hash, nonce, index)
+        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
+            .with_remaining_accounts(ra);
+        compressed_transfer(ctx, &[], root, data_hash, creator_hash, nonce, index)
     }
 }
 
@@ -92,10 +101,11 @@ pub fn handler<'info>(
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     ctx.accounts.transfer_compressed_nft(
+        ctx.remaining_accounts.to_vec(),
         data.root,
         data.data_hash,
         data.creator_hash,
-        data.nonce,
+        data.index as u64,
         data.index,
     )?;
 
@@ -104,6 +114,14 @@ pub fn handler<'info>(
         ctx.accounts.wallet.to_account_info(),
         ctx.accounts.initializer.to_account_info(),
         ctx.accounts.order.price,
+    )?;
+
+    let fee_amount = get_fee_amount(ctx.accounts.order.price);
+    // transfer fee to treasury
+    lamport_transfer(
+        ctx.accounts.wallet.to_account_info(),
+        ctx.accounts.treasury.to_account_info(),
+        fee_amount,
     )?;
 
     // edit order
