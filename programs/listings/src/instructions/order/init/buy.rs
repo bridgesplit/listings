@@ -13,7 +13,7 @@ pub struct InitBuyOrder<'info> {
     #[account(
         mut,
         // make sure bidding wallet has enough balance to place the order
-        constraint = wallet.balance >= data.price * data.size,
+        constraint = wallet.balance >= data.price.checked_mul(data.size).unwrap(),
         seeds = [WALLET_SEED.as_ref(),
         initializer.key().as_ref()],
         bump,

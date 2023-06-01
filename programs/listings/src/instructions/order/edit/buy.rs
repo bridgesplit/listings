@@ -29,6 +29,15 @@ pub struct EditBuyOrder<'info> {
         bump,
     )]
     pub order: Box<Account<'info, Order>>,
+    #[account(
+        mut,
+        // make sure bidding wallet has enough balance to place the order
+        constraint = wallet.balance >= data.new_price.checked_mul(data.new_size).unwrap(),
+        seeds = [WALLET_SEED.as_ref(),
+        initializer.key().as_ref()],
+        bump,
+    )]
+    pub wallet: Box<Account<'info, Wallet>>,
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
 }
