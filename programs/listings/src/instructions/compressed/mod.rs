@@ -12,6 +12,14 @@ pub struct CompressedOrderData {
     pub index: u32,
 }
 
+#[derive(AnchorDeserialize, AnchorSerialize, Clone)]
+pub struct CompressedFillOrderData {
+    pub root: [u8; 32],
+    pub data_hash: [u8; 32],
+    pub creator_hash: [u8; 32],
+    pub index: u32,
+}
+
 pub mod buy;
 pub mod sell;
 

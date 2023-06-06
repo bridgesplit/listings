@@ -208,7 +208,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "mpl-token-auth-rules",
- "mpl-token-metadata 1.11.2",
+ "mpl-token-metadata 1.12.0",
  "solana-program",
  "thiserror",
 ]
@@ -642,9 +642,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.25"
+version = "0.4.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdbc37d37da9e5bce8173f3a41b71d9bf3c674deebbaceacd0ebdabde76efb03"
+checksum = "ec837a71355b28f6556dbd569b37b3f363091c0bd4b2e735674521b4c5fd9bc5"
 dependencies = [
  "android-tzdata",
  "num-traits",
@@ -1337,8 +1337,8 @@ dependencies = [
 
 [[package]]
 name = "mpl-token-metadata"
-version = "1.11.2"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#e4df367c29109fde2ca824b3cb40fc257b0e6329"
+version = "1.12.0"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#9fc2a13b5a66d407f0b9ab31eb7b161b78f28ef0"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -1367,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "mpl-token-metadata-context-derive"
 version = "0.2.1"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#e4df367c29109fde2ca824b3cb40fc257b0e6329"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#9fc2a13b5a66d407f0b9ab31eb7b161b78f28ef0"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -1388,7 +1388,7 @@ dependencies = [
 [[package]]
 name = "mpl-utils"
 version = "0.2.0"
-source = "git+https://github.com/metaplex-foundation/metaplex-program-library#e4df367c29109fde2ca824b3cb40fc257b0e6329"
+source = "git+https://github.com/metaplex-foundation/metaplex-program-library#9fc2a13b5a66d407f0b9ab31eb7b161b78f28ef0"
 dependencies = [
  "arrayref",
  "borsh 0.9.3",
@@ -2482,7 +2482,7 @@ dependencies = [
  "anchor-spl",
  "gem_bank",
  "hex",
- "mpl-token-metadata 1.11.2",
+ "mpl-token-metadata 1.12.0",
  "num_enum",
  "rentals",
  "shank 0.0.4",

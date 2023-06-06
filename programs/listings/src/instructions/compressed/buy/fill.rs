@@ -6,7 +6,7 @@ use bridgesplit_program_utils::{
 };
 use vault::utils::lamport_transfer;
 
-use crate::{instructions::compressed::CompressedOrderData, state::*, utils::get_fee_amount};
+use crate::{instructions::compressed::CompressedFillOrderData, state::*, utils::get_fee_amount};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -94,7 +94,7 @@ impl<'info> CompressedFillBuyOrder<'info> {
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
-    data: CompressedOrderData,
+    data: CompressedFillOrderData,
 ) -> ProgramResult {
     // edit wallet account to decrease balance
     msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());

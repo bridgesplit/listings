@@ -100,7 +100,7 @@ pub mod listings {
 
     pub fn compressed_fill_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
-        data: CompressedOrderData,
+        data: CompressedFillOrderData,
     ) -> ProgramResult {
         instructions::compressed::sell::fill::handler(ctx, data)
     }
@@ -114,7 +114,7 @@ pub mod listings {
 
     pub fn compressed_fill_buy_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
-        data: CompressedOrderData,
+        data: CompressedFillOrderData,
     ) -> ProgramResult {
         instructions::compressed::buy::fill::handler(ctx, data)
     }
