@@ -55,6 +55,7 @@ pub enum OrderEditType {
     Edit,
     Fill,
     Close,
+    FillAndClose,
 }
 
 #[event]

@@ -205,7 +205,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
-            OrderEditType::Fill,
+            OrderEditType::FillAndClose,
         );
         ctx.accounts
             .order

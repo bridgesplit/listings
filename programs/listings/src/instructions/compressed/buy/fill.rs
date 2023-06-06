@@ -146,7 +146,7 @@ pub fn handler<'info>(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
-            OrderEditType::Close,
+            OrderEditType::FillAndClose,
         );
         ctx.accounts.order.state = OrderState::Closed.into();
         ctx.accounts
@@ -157,7 +157,7 @@ pub fn handler<'info>(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
-            OrderEditType::Edit,
+            OrderEditType::Fill,
         );
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }

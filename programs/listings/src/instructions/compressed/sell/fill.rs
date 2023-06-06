@@ -155,7 +155,7 @@ pub fn handler<'info>(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
-        OrderEditType::Close,
+        OrderEditType::FillAndClose,
     );
 
     Ok(())
