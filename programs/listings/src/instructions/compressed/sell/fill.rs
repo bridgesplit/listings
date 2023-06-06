@@ -7,7 +7,7 @@ use bridgesplit_program_utils::{
 use vault::utils::get_bump_in_seed_form;
 
 use crate::{
-    instructions::compressed::CompressedOrderData,
+    instructions::compressed::CompressedFillOrderData,
     state::*,
     utils::{get_fee_amount, transfer_sol},
 };
@@ -109,7 +109,7 @@ impl<'info> CompressedFillSellOrder<'info> {
 
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
-    data: CompressedOrderData,
+    data: CompressedFillOrderData,
 ) -> ProgramResult {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 
