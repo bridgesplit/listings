@@ -1,5 +1,4 @@
 use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use anchor_spl::token::Mint;
 use bridgesplit_program_utils::anchor_lang;
 
 use crate::state::*;
@@ -10,7 +9,8 @@ pub struct InitMarket<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
     #[account()]
-    pub pool_mint: Box<Account<'info, Mint>>,
+    /// CHECK: doesn't actually need to be a mint
+    pub pool_mint: UncheckedAccount<'info>,
     #[account(
         init,
         seeds = [MARKET_SEED.as_ref(),

@@ -18,8 +18,9 @@ pub struct CloseMarket<'info> {
     pub market: Box<Account<'info, Market>>,
 }
 
-pub fn handler(ctx: Context<CloseMarket>) -> ProgramResult {
-    msg!("Closing market");
-    ctx.accounts.market.state = MarketState::Closed.into();
+pub fn handler(_ctx: Context<CloseMarket>) -> ProgramResult {
+    // not required rn
+    // msg!("Closing market");
+    // ctx.accounts.market.state = MarketState::Closed.into();
     Ok(())
 }
