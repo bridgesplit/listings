@@ -6,6 +6,7 @@ use anchor_spl::{
 use bridgesplit_program_utils::{
     anchor_lang,
     pnft::update::{metaplex_update, MetaplexUpdate, UpdateParams},
+    MplTokenMetadata,
 };
 use mpl_token_metadata::{
     instruction::{
@@ -37,7 +38,7 @@ pub mod listings {
 pub struct UpgradeNft<'info> {
     #[account(
         mut,
-        constraint = "collection.owner" == authority.key().to_string(),
+        constraint = authority.key().to_string() == "ovo1kT7RqrAZwFtgSGEgNfa7nHjeZoK6ykg1GknJEXG",
     )]
     pub authority: Signer<'info>,
     #[account(mut)]
@@ -46,6 +47,7 @@ pub struct UpgradeNft<'info> {
     pub nft_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
+        constraint = nft_ta.amount == 1,
         associated_token::mint = nft_mint,
         associated_token::authority = owner
     )]
@@ -76,8 +78,7 @@ pub struct UpgradeNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    /// CHECK: Checks done in Metaplex
-    pub mpl_token_metadata: UncheckedAccount<'info>,
+    pub mpl_token_metadata: Program<'info, MplTokenMetadata>,
     /// CHECK: checked by address and in cpi
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
