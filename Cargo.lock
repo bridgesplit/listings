@@ -877,6 +877,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "evolution"
+version = "0.1.0"
+dependencies = [
+ "bridgesplit-anchor-spl",
+ "bridgesplit-program-utils",
+ "cargo-husky",
+ "mpl-token-metadata 1.10.0",
+ "winnow",
+]
+
+[[package]]
 name = "feature-probe"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
