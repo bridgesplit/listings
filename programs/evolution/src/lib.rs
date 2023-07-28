@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, TokenAccount};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::{mint_to, Mint, MintTo, Token, TokenAccount},
+};
 use bridgesplit_program_utils::{
     anchor_lang,
     pnft::update::{metaplex_update, MetaplexUpdate, UpdateParams},
@@ -47,6 +50,23 @@ pub struct UpgradeNft<'info> {
     pub nft_ta: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(
+        init_if_needed,
+        seeds = [authority.key().as_ref()],
+        bump,
+        payer = owner,
+        mint::decimals = 0,
+        mint::authority = authority,
+        mint::freeze_authority = authority,
+    )]
+    pub launchpad_mint: Box<Account<'info, Mint>>,
+    #[account(
+        init_if_needed,
+        payer = owner,
+        associated_token::mint = launchpad_mint,
+        associated_token::authority = owner,
+    )]
+    pub launchpad_mint_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
     pub nft_metadata: UncheckedAccount<'info>,
@@ -54,6 +74,8 @@ pub struct UpgradeNft<'info> {
     #[account(mut)]
     pub nft_master_edition: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     /// CHECK: Checks done in Metaplex
     pub authorization_rules: UncheckedAccount<'info>,
     /// CHECK: Checks done in Metaplex
@@ -69,6 +91,7 @@ pub struct UpgradeNft<'info> {
 pub struct UpdateData {
     pub name: String,
     pub uri: String,
+    pub mint_token: bool,
 }
 
 pub fn upgrade_nft<'info>(
@@ -116,5 +139,19 @@ pub fn upgrade_nft<'info>(
         authorization_rules: Some(ctx.accounts.authorization_rules.to_account_info()),
     };
 
-    metaplex_update(cpi_ctx, update_params)
+    metaplex_update(cpi_ctx, update_params)?;
+
+    if data.mint_token {
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo {
+                mint: ctx.accounts.launchpad_mint.to_account_info(),
+                to: ctx.accounts.launchpad_mint_ta.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info(),
+            },
+        );
+        mint_to(cpi_ctx, 1)?
+    }
+
+    Ok(())
 }
