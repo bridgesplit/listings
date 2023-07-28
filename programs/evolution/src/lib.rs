@@ -94,10 +94,22 @@ pub struct UpdateData {
     pub mint_token: bool,
 }
 
+#[error_code]
+pub enum SpecificErrorCode {
+    #[msg("Nft has already been upgraded")]
+    AlreadyUpgraded,
+}
+
 pub fn upgrade_nft<'info>(
     ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
     data: UpdateData,
 ) -> Result<()> {
+    let metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
+
+    if metadata.data.uri == data.uri {
+        return Err(SpecificErrorCode::AlreadyUpgraded.into());
+    }
+
     let cpi_program = ctx.accounts.mpl_token_metadata.to_account_info();
     let cpi_accounts = MetaplexUpdate {
         authority: ctx.accounts.authority.to_account_info(),
@@ -107,8 +119,6 @@ pub fn upgrade_nft<'info>(
         system_program: ctx.accounts.system_program.to_account_info(),
         sysvar_instructions: ctx.accounts.sysvar_instructions.to_account_info(),
     };
-
-    let metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
 
     let cpi_ctx: CpiContext<'_, '_, '_, '_, MetaplexUpdate<'_>> =
         CpiContext::new(cpi_program, cpi_accounts);
