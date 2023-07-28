@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, Mint, MintTo, Token, TokenAccount},
+    token::{burn, mint_to, Burn, Mint, MintTo, Token, TokenAccount},
 };
 use bridgesplit_program_utils::{
     anchor_lang,
@@ -12,7 +12,7 @@ use mpl_token_metadata::{
     instruction::{
         CollectionDetailsToggle, CollectionToggle, RuleSetToggle, UpdateArgs, UsesToggle,
     },
-    solana_program::sysvar,
+    solana_program::{native_token::LAMPORTS_PER_SOL, sysvar},
     state::{Data, Metadata, TokenMetadataAccount},
 };
 
@@ -69,6 +69,18 @@ pub struct UpgradeNft<'info> {
         associated_token::authority = owner,
     )]
     pub launchpad_mint_ta: Box<Account<'info, TokenAccount>>,
+    #[account(
+        mut,
+        constraint = ovo_mint.key().to_string() == "ovo2N3VqRfkZgbb56Gse7oLDXJLJEeqq5z9ePHRxhzL",
+    )]
+    pub ovo_mint: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = ovo_ta.amount >= 100 * LAMPORTS_PER_SOL, // 100 ovo
+        associated_token::mint = launchpad_mint,
+        associated_token::authority = owner,
+    )]
+    pub ovo_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
     pub nft_metadata: UncheckedAccount<'info>,
@@ -111,12 +123,23 @@ pub fn upgrade_nft_ix<'info>(
         return Err(SpecificErrorCode::AlreadyUpgraded.into());
     }
 
+    let cpi_ctx = CpiContext::new(
+        ctx.accounts.token_program.to_account_info(),
+        Burn {
+            from: ctx.accounts.ovo_ta.to_account_info(),
+            mint: ctx.accounts.ovo_mint.to_account_info(),
+            authority: ctx.accounts.owner.to_account_info(),
+        },
+    );
+    burn(cpi_ctx, 100 * LAMPORTS_PER_SOL)?; // 100 ovo // 9 decimals
+
     let cpi_program = ctx.accounts.mpl_token_metadata.to_account_info();
+
     let cpi_accounts = MetaplexUpdate {
         authority: ctx.accounts.authority.to_account_info(),
         mint: ctx.accounts.nft_mint.to_account_info(),
         metadata: ctx.accounts.nft_metadata.to_account_info(),
-        payer: ctx.accounts.authority.to_account_info(),
+        payer: ctx.accounts.owner.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
         sysvar_instructions: ctx.accounts.sysvar_instructions.to_account_info(),
     };
