@@ -24,11 +24,11 @@ declare_id!("mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie");
 pub mod listings {
     use super::*;
 
-    pub fn upgrade_nft_ix<'info>(
+    pub fn upgrade_nft<'info>(
         ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
         update_params: UpdateData,
     ) -> Result<()> {
-        upgrade_nft(ctx, update_params)
+        upgrade_nft_ix(ctx, update_params)
     }
 }
 
@@ -42,14 +42,14 @@ pub struct UpgradeNft<'info> {
     pub authority: Signer<'info>,
     #[account(mut)]
     pub owner: Signer<'info>,
+    #[account(mut)]
+    pub nft_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
         associated_token::mint = nft_mint,
         associated_token::authority = owner
     )]
     pub nft_ta: Box<Account<'info, TokenAccount>>,
-    #[account(mut)]
-    pub nft_mint: Box<Account<'info, Mint>>,
     #[account(
         init_if_needed,
         seeds = [authority.key().as_ref()],
@@ -77,14 +77,14 @@ pub struct UpgradeNft<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     /// CHECK: Checks done in Metaplex
-    pub authorization_rules: UncheckedAccount<'info>,
-    /// CHECK: Checks done in Metaplex
-    pub authorization_rules_program: UncheckedAccount<'info>,
-    /// CHECK: Checks done in Metaplex
     pub mpl_token_metadata: UncheckedAccount<'info>,
     /// CHECK: checked by address and in cpi
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
+    /// CHECK: Checks done in Metaplex
+    pub authorization_rules: UncheckedAccount<'info>,
+    /// CHECK: Checks done in Metaplex
+    pub authorization_rules_program: UncheckedAccount<'info>,
 }
 
 #[account]
@@ -100,7 +100,7 @@ pub enum SpecificErrorCode {
     AlreadyUpgraded,
 }
 
-pub fn upgrade_nft<'info>(
+pub fn upgrade_nft_ix<'info>(
     ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
     data: UpdateData,
 ) -> Result<()> {
