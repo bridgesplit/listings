@@ -16,10 +16,7 @@ use mpl_token_metadata::{
     state::{Data, Metadata, TokenMetadataAccount},
 };
 
-// mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie - prod program id
-// tsthbYzhRwHcVgoGJVv87QFFa13V7fLnKMrpgFMEgRa - staging program id
-
-declare_id!("mrkTzoWMVEBJ3AUrgd2eXNLXrnBuhhQRQyxahtaeTie");
+declare_id!("Evo1SmkHAaanve1Xp7dDRGZPLu4HFA19XiyTqGKLFRyP");
 
 #[program]
 pub mod listings {
