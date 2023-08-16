@@ -1,0 +1,27 @@
+[package]
+name = "evolution"
+version = "0.1.0"
+description = "Evolution program"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "evolution"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+winnow = "=0.4.1"
+bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git" }
+anchor-spl = { git="ssh://git@github.com/bridgesplit/program-utils.git", package="bridgesplit-anchor-spl" }
+mpl-token-metadata = "=1.10.0"
+
+
+[dev-dependencies.cargo-husky]
+version = "1"
+default-features = false # Disable features which are enabled by default
+features = ["precommit-hook", "run-cargo-fmt", "run-cargo-clippy"]
