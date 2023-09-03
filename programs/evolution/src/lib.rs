@@ -74,7 +74,7 @@ pub struct UpgradeNft<'info> {
     #[account(
         mut,
         constraint = ovo_ta.amount >= 100 * LAMPORTS_PER_SOL, // 100 ovo
-        associated_token::mint = launchpad_mint,
+        associated_token::mint = ovo_mint,
         associated_token::authority = owner,
     )]
     pub ovo_ta: Box<Account<'info, TokenAccount>>,
