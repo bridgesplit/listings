@@ -151,8 +151,13 @@ impl Order {
         state != <OrderState as Into<u8>>::into(OrderState::Closed)
     }
 
-    pub fn emit_event(&mut self, address: Pubkey, pool_mint: Pubkey, edit_type: OrderEditType) {
-        emit!(OrderEditEvent {
+    pub fn get_edit_event(
+        &mut self,
+        address: Pubkey,
+        pool_mint: Pubkey,
+        edit_type: OrderEditType,
+    ) -> OrderEditEvent {
+        OrderEditEvent {
             edit_type: edit_type.into(),
             address: address.to_string(),
             version: self.version,
@@ -167,7 +172,7 @@ impl Order {
             init_time: self.init_time,
             last_edit_time: self.last_edit_time,
             nft_mint: self.nft_mint.to_string(),
-            pool_mint: pool_mint.to_string()
-        })
+            pool_mint: pool_mint.to_string(),
+        }
     }
 }

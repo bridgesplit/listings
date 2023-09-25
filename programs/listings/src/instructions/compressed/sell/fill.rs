@@ -14,6 +14,7 @@ use crate::{
 
 #[derive(Accounts)]
 #[instruction()]
+#[event_cpi]
 pub struct CompressedFillSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -151,12 +152,12 @@ pub fn handler<'info>(
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::FillAndClose,
-    );
+    ));
 
     Ok(())
 }

@@ -5,6 +5,7 @@ use crate::state::*;
 
 #[derive(Accounts)]
 #[instruction()]
+#[event_cpi]
 pub struct InitMarket<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -31,10 +32,10 @@ pub fn handler(ctx: Context<InitMarket>) -> ProgramResult {
         ctx.accounts.initializer.key(),
     );
 
-    Market::emit_event(
+    emit_cpi!(Market::get_edit_event(
         &mut ctx.accounts.market.clone(),
         ctx.accounts.market.key(),
         MarketEditType::Init,
-    );
+    ));
     Ok(())
 }

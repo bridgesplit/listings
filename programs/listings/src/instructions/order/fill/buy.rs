@@ -13,6 +13,8 @@ use crate::{
 };
 
 #[derive(Accounts)]
+#[instruction()]
+#[event_cpi]
 pub struct FillBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -81,7 +83,7 @@ pub struct FillBuyOrder<'info> {
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub token_metadata_program: Program<'info, MplTokenMetadata>,
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -135,7 +137,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
         ctx.accounts.sysvar_instructions.to_account_info(),
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        ctx.accounts.token_metadata_program.to_account_info(),
         ExtraTransferParams {
             owner_token_record: pnft_params.token_record,
             dest_token_record: buyer_token_record,
@@ -201,30 +203,30 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillBuyOrder<'info>>) -> R
             ctx.accounts.market.pool_mint
         );
         ctx.accounts.order.state = OrderState::Closed.into();
-        Order::emit_event(
+        emit_cpi!(Order::get_edit_event(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
             OrderEditType::FillAndClose,
-        );
+        ));
         ctx.accounts
             .order
             .close(ctx.accounts.buyer.to_account_info())?;
     } else {
-        Order::emit_event(
+        emit_cpi!(Order::get_edit_event(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
             OrderEditType::Fill,
-        );
+        ));
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 
-    Wallet::emit_event(
+    emit_cpi!(Wallet::get_edit_event(
         &mut ctx.accounts.wallet.clone(),
         ctx.accounts.wallet.key(),
         WalletEditType::Edit,
-    );
+    ));
 
     Ok(())
 }

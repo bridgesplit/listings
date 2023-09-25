@@ -15,11 +15,10 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-winnow = "=0.4.1"
-bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git" }
-anchor-spl = { git="ssh://git@github.com/bridgesplit/program-utils.git", package="bridgesplit-anchor-spl" }
-mpl-token-metadata = "=1.10.0"
-
+bridgesplit-program-utils = { git="ssh://git@github.com/bridgesplit/program-utils.git", branch = "token_metadata"  }
+anchor-lang = { version = "0.28.0" }
+anchor-spl = "0.28.0"
+token_metadata = { git = "https://github.com/metaplex-foundation/mpl-token-metadata", features = ["no-entrypoint"] }
 
 [dev-dependencies.cargo-husky]
 version = "1"

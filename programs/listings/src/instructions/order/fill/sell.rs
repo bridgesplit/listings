@@ -20,6 +20,7 @@ use crate::{
 
 #[derive(Accounts)]
 #[instruction()]
+#[event_cpi]
 pub struct FillSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -86,7 +87,7 @@ pub struct FillSellOrder<'info> {
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub token_metadata_program: Program<'info, MplTokenMetadata>,
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -181,7 +182,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
             ctx.accounts.sysvar_instructions.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.associated_token_program.to_account_info(),
-            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            ctx.accounts.token_metadata_program.to_account_info(),
             signer_seeds,
             pnft_params.clone(),
         )?;
@@ -202,7 +203,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         ctx.accounts.sysvar_instructions.to_account_info(),
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.associated_token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        ctx.accounts.token_metadata_program.to_account_info(),
         ExtraTransferParams {
             dest_token_record,
             owner_token_record: pnft_params.token_record.clone(),
@@ -228,12 +229,12 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     // close order account
     msg!("Close sell order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::FillAndClose,
-    );
+    ));
 
     Ok(())
 }

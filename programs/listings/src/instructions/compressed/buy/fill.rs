@@ -10,6 +10,7 @@ use crate::{instructions::compressed::CompressedFillOrderData, state::*, utils::
 
 #[derive(Accounts)]
 #[instruction()]
+#[event_cpi]
 pub struct CompressedFillBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -142,23 +143,23 @@ pub fn handler<'info>(
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint
         );
-        Order::emit_event(
+        emit_cpi!(Order::get_edit_event(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
             OrderEditType::FillAndClose,
-        );
+        ));
         ctx.accounts.order.state = OrderState::Closed.into();
         ctx.accounts
             .order
             .close(ctx.accounts.buyer.to_account_info())?;
     } else {
-        Order::emit_event(
+        emit_cpi!(Order::get_edit_event(
             &mut ctx.accounts.order.clone(),
             ctx.accounts.order.key(),
             ctx.accounts.market.pool_mint,
             OrderEditType::Fill,
-        );
+        ));
         msg!("Filled buy order: {}", ctx.accounts.order.key());
     }
 

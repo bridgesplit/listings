@@ -15,7 +15,7 @@ use bridgesplit_program_utils::{
     pnft::utils::ExistingDelegateParams, state::Metadata as BS_Metadata, BridgesplitDelegate,
     BridgesplitFreeze, BridgesplitRevoke,
 };
-use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
+use token_metadata::state::{Metadata, TokenMetadataAccount};
 use vault::utils::{get_index_fee_bp, lamport_transfer};
 
 use crate::state::{Order, PROTOCOL_FEES_BPS};
@@ -39,11 +39,11 @@ pub fn transfer_nft<'info>(
     instructions_program: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
     associated_token_program: AccountInfo<'info>,
-    mpl_token_metadata_program: AccountInfo<'info>,
+    token_metadata_program: AccountInfo<'info>,
     transfer_params: ExtraTransferParams<'info>,
     signer_seeds: &[&[&[u8]]],
 ) -> Result<(), anchor_lang::prelude::Error> {
-    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_program = token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitTransfer {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
@@ -74,11 +74,11 @@ pub fn delegate_nft<'info>(
     system_program: AccountInfo<'info>,
     sysvar_instructions: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
-    mpl_token_metadata_program: AccountInfo<'info>,
+    token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
     delegate_params: ExtraDelegateParams<'info>,
 ) -> Result<(), anchor_lang::prelude::Error> {
-    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_program = token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitDelegate {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
@@ -107,11 +107,11 @@ pub fn freeze_nft<'info>(
     sysvar_instructions: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
     ata_program: AccountInfo<'info>,
-    mpl_token_metadata_program: AccountInfo<'info>,
+    token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
     freeze_params: PnftParams<'info>,
 ) -> Result<(), anchor_lang::prelude::Error> {
-    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_program = token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitFreeze {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
@@ -121,7 +121,7 @@ pub fn freeze_nft<'info>(
         token_program: token_program.to_account_info(),
         token: token.to_account_info(),
         token_owner: authority.to_account_info(),
-        mpl_token_metadata: mpl_token_metadata_program.to_account_info(),
+        token_metadata: token_metadata_program.to_account_info(),
         delegate: delegate.to_account_info(),
         edition: nft_edition.clone(),
         ata_program: ata_program.clone(),
@@ -142,11 +142,11 @@ pub fn revoke_nft<'info>(
     system_program: AccountInfo<'info>,
     sysvar_instructions: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
-    mpl_token_metadata_program: AccountInfo<'info>,
+    token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
     revoke_params: ExtraRevokeParams<'info>,
 ) -> Result<(), Error> {
-    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_program = token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitRevoke {
         authority: authority.to_account_info(),
         payer: payer.to_account_info(),
@@ -175,11 +175,11 @@ pub fn unfreeze_nft<'info>(
     sysvar_instructions: AccountInfo<'info>,
     token_program: AccountInfo<'info>,
     associated_token_program: AccountInfo<'info>,
-    mpl_token_metadata_program: AccountInfo<'info>,
+    token_metadata_program: AccountInfo<'info>,
     signer_seeds: &[&[&[u8]]],
     delegate_params: PnftParams<'info>,
 ) -> Result<(), Error> {
-    let cpi_program = mpl_token_metadata_program.to_account_info();
+    let cpi_program = token_metadata_program.to_account_info();
     let cpi_accounts = BridgesplitFreeze {
         authority: delegate.to_account_info(),
         payer: payer.to_account_info(),
@@ -191,7 +191,7 @@ pub fn unfreeze_nft<'info>(
         delegate: delegate.to_account_info(),
         token_owner: authority.to_account_info(),
         edition: nft_edition.to_account_info(),
-        mpl_token_metadata: mpl_token_metadata_program.clone(),
+        token_metadata: token_metadata_program.clone(),
         instructions: sysvar_instructions.clone(),
         ata_program: associated_token_program.clone(),
     };

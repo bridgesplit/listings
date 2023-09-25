@@ -8,7 +8,7 @@ use bridgesplit_program_utils::{
     pnft::update::{metaplex_update, MetaplexUpdate, UpdateParams},
     MplTokenMetadata,
 };
-use mpl_token_metadata::{
+use token_metadata::{
     instruction::{
         CollectionDetailsToggle, CollectionToggle, RuleSetToggle, UpdateArgs, UsesToggle,
     },
@@ -19,7 +19,7 @@ use mpl_token_metadata::{
 declare_id!("Evo1SmkHAaanve1Xp7dDRGZPLu4HFA19XiyTqGKLFRyP");
 
 #[program]
-pub mod listings {
+pub mod evolution {
     use super::*;
 
     pub fn upgrade_nft<'info>(
@@ -74,7 +74,7 @@ pub struct UpgradeNft<'info> {
     #[account(
         mut,
         constraint = ovo_ta.amount >= 100 * LAMPORTS_PER_SOL, // 100 ovo
-        associated_token::mint = launchpad_mint,
+        associated_token::mint = ovo_mint,
         associated_token::authority = owner,
     )]
     pub ovo_ta: Box<Account<'info, TokenAccount>>,
@@ -87,7 +87,7 @@ pub struct UpgradeNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub mpl_token_metadata: Program<'info, MplTokenMetadata>,
+    pub token_metadata: Program<'info, MplTokenMetadata>,
     /// CHECK: checked by address and in cpi
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
@@ -130,7 +130,7 @@ pub fn upgrade_nft_ix<'info>(
     );
     burn(cpi_ctx, 100 * LAMPORTS_PER_SOL)?; // 100 ovo // 9 decimals
 
-    let cpi_program = ctx.accounts.mpl_token_metadata.to_account_info();
+    let cpi_program = ctx.accounts.token_metadata.to_account_info();
 
     let cpi_accounts = MetaplexUpdate {
         authority: ctx.accounts.authority.to_account_info(),

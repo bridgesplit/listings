@@ -57,14 +57,18 @@ impl Market {
         state != <MarketState as Into<u8>>::into(MarketState::Closed)
     }
 
-    pub fn emit_event(&mut self, address: Pubkey, edit_type: MarketEditType) {
-        emit!(MarketEditEvent {
+    pub fn get_edit_event(
+        &mut self,
+        address: Pubkey,
+        edit_type: MarketEditType,
+    ) -> MarketEditEvent {
+        MarketEditEvent {
             edit_type: edit_type.into(),
             address: address.to_string(),
             version: self.version,
             pool_mint: self.pool_mint.to_string(),
             initializer: self.initializer.to_string(),
             state: self.state,
-        })
+        }
     }
 }

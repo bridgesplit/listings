@@ -7,6 +7,7 @@ use super::EditBuyOrderData;
 
 #[derive(Accounts)]
 #[instruction(data: EditBuyOrderData)]
+#[event_cpi]
 pub struct EditBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -52,12 +53,12 @@ pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramRes
         ctx.accounts.clock.unix_timestamp,
     );
 
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::Edit,
-    );
+    ));
 
     Ok(())
 }

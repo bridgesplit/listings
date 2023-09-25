@@ -11,6 +11,7 @@ use crate::{instructions::compressed::CompressedOrderData, state::*};
 
 #[derive(Accounts)]
 #[instruction(data: CompressedOrderData)]
+#[event_cpi]
 pub struct CompressedInitSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -119,12 +120,12 @@ pub fn handler<'info>(
         data.index,
     )?;
 
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::Init,
-    );
+    ));
 
     Ok(())
 }

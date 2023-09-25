@@ -6,6 +6,7 @@ use crate::{state::*, utils::transfer_sol};
 
 #[derive(Accounts)]
 #[instruction(amount_change: u64, is_increase: bool)]
+#[event_cpi]
 pub struct EditBiddingWallet<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -55,10 +56,10 @@ pub fn handler(
         )?;
     }
 
-    Wallet::emit_event(
+    emit_cpi!(Wallet::get_edit_event(
         &mut ctx.accounts.wallet.clone(),
         ctx.accounts.wallet.key(),
         WalletEditType::Edit,
-    );
+    ));
     Ok(())
 }

@@ -49,13 +49,17 @@ impl Wallet {
         }
     }
 
-    pub fn emit_event(&mut self, address: Pubkey, edit_type: WalletEditType) {
-        emit!(WalletEditEvent {
+    pub fn get_edit_event(
+        &mut self,
+        address: Pubkey,
+        edit_type: WalletEditType,
+    ) -> WalletEditEvent {
+        WalletEditEvent {
             edit_type: edit_type.into(),
             address: address.to_string(),
             version: self.version,
             owner: self.owner.to_string(),
             balance: self.balance,
-        })
+        }
     }
 }

@@ -10,7 +10,7 @@ use bridgesplit_program_utils::{anchor_lang, pnft::utils::get_is_pnft};
 use bridgesplit_program_utils::{
     get_bump_in_seed_form, state::Metadata, ExtraDelegateParams, MplTokenMetadata,
 };
-use mpl_token_metadata::instruction::DelegateArgs;
+use token_metadata::instruction::DelegateArgs;
 use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
@@ -22,6 +22,7 @@ use super::InitOrderData;
 
 #[derive(Accounts)]
 #[instruction(data: InitOrderData)]
+#[event_cpi]
 pub struct InitSellOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -76,7 +77,7 @@ pub struct InitSellOrder<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub mpl_token_metadata_program: Program<'info, MplTokenMetadata>,
+    pub token_metadata_program: Program<'info, MplTokenMetadata>,
     pub clock: Sysvar<'info, Clock>,
 }
 //remaining accounts
@@ -142,7 +143,7 @@ pub fn handler<'info>(
         ctx.accounts.system_program.to_account_info(),
         ctx.accounts.sysvar_instructions.to_account_info(),
         ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.mpl_token_metadata_program.to_account_info(),
+        ctx.accounts.token_metadata_program.to_account_info(),
         signer_seeds,
         ExtraDelegateParams {
             master_edition: Some(ctx.accounts.nft_edition.to_account_info()),
@@ -172,18 +173,18 @@ pub fn handler<'info>(
             ctx.accounts.sysvar_instructions.to_account_info(),
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.associated_token_program.to_account_info(),
-            ctx.accounts.mpl_token_metadata_program.to_account_info(),
+            ctx.accounts.token_metadata_program.to_account_info(),
             signer_seeds,
             pnft_params,
         )?;
     }
 
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::Init,
-    );
+    ));
 
     Ok(())
 }

@@ -7,6 +7,7 @@ use super::InitOrderData;
 
 #[derive(Accounts)]
 #[instruction(data: InitOrderData)]
+#[event_cpi]
 pub struct InitBuyOrder<'info> {
     #[account(mut)]
     pub initializer: Signer<'info>,
@@ -78,12 +79,12 @@ pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult
         parsed_accounts.fees_on,
     );
 
-    Order::emit_event(
+    emit_cpi!(Order::get_edit_event(
         &mut ctx.accounts.order.clone(),
         ctx.accounts.order.key(),
         ctx.accounts.market.pool_mint,
         OrderEditType::Init,
-    );
+    ));
 
     Ok(())
 }
