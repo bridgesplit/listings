@@ -22,6 +22,7 @@ pub struct InitBiddingWallet<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[inline(always)]
 pub fn handler(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
     msg!("Initializing a new wallet: {}", ctx.accounts.wallet.key());
 

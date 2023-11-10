@@ -43,6 +43,7 @@ pub struct EditBuyOrder<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+#[inline(always)]
 pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
     msg!("Edit buy order: {}", ctx.accounts.order.key());
     // edit the order with size

@@ -74,6 +74,7 @@ pub struct CloseSellOrder<'info> {
 // 2 authorization_rules_program or default,
 // 4 delegate record or default
 
+#[inline(always)]
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) -> ProgramResult {
     msg!("Close sell order account: {}", ctx.accounts.order.key());
 

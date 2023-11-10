@@ -32,6 +32,7 @@ pub struct CloseBuyOrder<'info> {
     pub market: Box<Account<'info, Market>>,
 }
 
+#[inline(always)]
 pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
     msg!("Close buy order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();

@@ -90,6 +90,7 @@ pub struct InitSellOrder<'info> {
 // 7 ovol nft ta [optional]
 // 8 ovol nft metadata [optional]
 
+#[inline(always)]
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
     data: InitOrderData,

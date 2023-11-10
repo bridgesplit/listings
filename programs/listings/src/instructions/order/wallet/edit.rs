@@ -21,6 +21,7 @@ pub struct EditBiddingWallet<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[inline(always)]
 pub fn handler(
     ctx: Context<EditBiddingWallet>,
     amount_change: u64,

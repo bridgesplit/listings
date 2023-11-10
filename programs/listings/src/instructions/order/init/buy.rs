@@ -52,6 +52,7 @@ pub struct InitBuyOrder<'info> {
 // 3 ovol nft ta [optional]
 // 4 ovol nft metadata [optional]
 
+#[inline(always)]
 pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
     msg!("Initialize a new buy order: {}", ctx.accounts.order.key());
 

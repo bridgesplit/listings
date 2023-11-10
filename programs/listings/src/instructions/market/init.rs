@@ -24,6 +24,7 @@ pub struct InitMarket<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[inline(always)]
 pub fn handler(ctx: Context<InitMarket>) -> ProgramResult {
     msg!("Initializing new market");
     Market::init(

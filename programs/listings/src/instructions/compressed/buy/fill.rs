@@ -93,6 +93,7 @@ impl<'info> CompressedFillBuyOrder<'info> {
 
 /// seller is initializer and is transferring the nft to buyer who is the owner of the order account
 /// buyer is the owner of the order account and is transferring sol to seller via bidding wallet
+#[inline(always)]
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
     data: CompressedFillOrderData,

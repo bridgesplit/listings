@@ -104,6 +104,7 @@ pub struct FillSellOrder<'info> {
 /// Initializer is the buyer and is buying an nft from the seller
 /// The seller is the owner of the order account
 /// Buyer transfers sol to seller account
+#[inline(always)]
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
     let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
 

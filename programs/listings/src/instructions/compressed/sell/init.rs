@@ -89,6 +89,7 @@ impl<'info> CompressedInitSellOrder<'info> {
 
 //remaining accts is ovols ta and ovols metadata
 
+#[inline(always)]
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedInitSellOrder<'info>>,
     data: CompressedOrderData,

@@ -12,7 +12,7 @@ use token_metadata::{
     instruction::{
         CollectionDetailsToggle, CollectionToggle, RuleSetToggle, UpdateArgs, UsesToggle,
     },
-    solana_program::{native_token::LAMPORTS_PER_SOL, sysvar},
+    solana_program::sysvar,
     state::{Data, Metadata, TokenMetadataAccount},
 };
 
@@ -68,12 +68,12 @@ pub struct UpgradeNft<'info> {
     pub launchpad_mint_ta: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
-        constraint = ovo_mint.key().to_string() == "ovo2N3VqRfkZgbb56Gse7oLDXJLJEeqq5z9ePHRxhzL",
+        constraint = ovo_mint.key().to_string() == "4v3UTV9jibkhPfHi5amevropw6vFKVWo7BmxwQzwEwq6",
     )]
     pub ovo_mint: Box<Account<'info, Mint>>,
     #[account(
         mut,
-        constraint = ovo_ta.amount >= 100 * LAMPORTS_PER_SOL, // 100 ovo
+        constraint = ovo_ta.amount >= 900 * 100, // 900 OVOL
         associated_token::mint = ovo_mint,
         associated_token::authority = owner,
     )]
@@ -128,7 +128,7 @@ pub fn upgrade_nft_ix<'info>(
             authority: ctx.accounts.owner.to_account_info(),
         },
     );
-    burn(cpi_ctx, 100 * LAMPORTS_PER_SOL)?; // 100 ovo // 9 decimals
+    burn(cpi_ctx, 900 * 100)?; // 900 OVOL || 2 decimals
 
     let cpi_program = ctx.accounts.token_metadata.to_account_info();
 

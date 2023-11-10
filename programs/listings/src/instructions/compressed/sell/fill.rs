@@ -108,6 +108,7 @@ impl<'info> CompressedFillSellOrder<'info> {
     }
 }
 
+#[inline(always)]
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
     data: CompressedFillOrderData,
