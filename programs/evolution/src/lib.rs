@@ -203,16 +203,7 @@ pub struct AuthUpgradeNft<'info> {
     )]
     pub authority: Signer<'info>,
     #[account(mut)]
-    pub owner: Signer<'info>,
-    #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
-    #[account(
-        mut,
-        constraint = nft_ta.amount == 1,
-        associated_token::mint = nft_mint,
-        associated_token::authority = owner
-    )]
-    pub nft_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
     pub nft_metadata: UncheckedAccount<'info>,
@@ -244,7 +235,7 @@ pub fn auth_upgrade_nft_ix<'info>(
         authority: ctx.accounts.authority.to_account_info(),
         mint: ctx.accounts.nft_mint.to_account_info(),
         metadata: ctx.accounts.nft_metadata.to_account_info(),
-        payer: ctx.accounts.owner.to_account_info(),
+        payer: ctx.accounts.authority.to_account_info(),
         system_program: ctx.accounts.system_program.to_account_info(),
         sysvar_instructions: ctx.accounts.sysvar_instructions.to_account_info(),
     };
@@ -270,7 +261,7 @@ pub fn auth_upgrade_nft_ix<'info>(
             authorization_data: None,
         },
         delegate_record: None,
-        token: Some(ctx.accounts.nft_ta.to_account_info()),
+        token: None,
         edition: Some(ctx.accounts.nft_master_edition.to_account_info()),
         authorization_rules_program: Some(
             ctx.accounts.authorization_rules_program.to_account_info(),
