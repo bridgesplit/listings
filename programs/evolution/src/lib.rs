@@ -28,6 +28,13 @@ pub mod evolution {
     ) -> Result<()> {
         upgrade_nft_ix(ctx, update_params)
     }
+
+    pub fn auth_upgrade_nft<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
+        update_params: UpdateData,
+    ) -> Result<()> {
+        upgrade_nft_ix(ctx, update_params)
+    }
 }
 
 #[derive(Accounts)]
@@ -183,6 +190,95 @@ pub fn upgrade_nft_ix<'info>(
         );
         mint_to(cpi_ctx, 1)?
     }
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+#[instruction()]
+pub struct AuthUpgradeNft<'info> {
+    #[account(
+        mut,
+        constraint = authority.key().to_string() == "ovo1kT7RqrAZwFtgSGEgNfa7nHjeZoK6ykg1GknJEXG",
+    )]
+    pub authority: Signer<'info>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    #[account(mut)]
+    pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = nft_ta.amount == 1,
+        associated_token::mint = nft_mint,
+        associated_token::authority = owner
+    )]
+    pub nft_ta: Box<Account<'info, TokenAccount>>,
+    /// CHECK: Checks done in Metaplex
+    #[account(mut)]
+    pub nft_metadata: UncheckedAccount<'info>,
+    /// CHECK: Checks done in Metaplex
+    #[account(mut)]
+    pub nft_master_edition: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_metadata: Program<'info, MplTokenMetadata>,
+    /// CHECK: checked by address and in cpi
+    #[account(address = sysvar::instructions::id())]
+    pub sysvar_instructions: UncheckedAccount<'info>,
+    /// CHECK: Checks done in Metaplex
+    pub authorization_rules: UncheckedAccount<'info>,
+    /// CHECK: Checks done in Metaplex
+    pub authorization_rules_program: UncheckedAccount<'info>,
+}
+
+pub fn auth_upgrade_nft_ix<'info>(
+    ctx: Context<'_, '_, '_, 'info, AuthUpgradeNft<'info>>,
+    data: UpdateData,
+) -> Result<()> {
+    let metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
+
+    let cpi_program = ctx.accounts.token_metadata.to_account_info();
+
+    let cpi_accounts = MetaplexUpdate {
+        authority: ctx.accounts.authority.to_account_info(),
+        mint: ctx.accounts.nft_mint.to_account_info(),
+        metadata: ctx.accounts.nft_metadata.to_account_info(),
+        payer: ctx.accounts.owner.to_account_info(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+        sysvar_instructions: ctx.accounts.sysvar_instructions.to_account_info(),
+    };
+
+    let cpi_ctx: CpiContext<'_, '_, '_, '_, MetaplexUpdate<'_>> =
+        CpiContext::new(cpi_program, cpi_accounts);
+    let update_params = UpdateParams {
+        update_args: UpdateArgs::V1 {
+            new_update_authority: Some(metadata.update_authority),
+            data: Some(Data {
+                name: data.name,
+                symbol: metadata.data.symbol,
+                uri: data.uri,
+                seller_fee_basis_points: metadata.data.seller_fee_basis_points,
+                creators: metadata.data.creators,
+            }),
+            primary_sale_happened: Some(true),
+            is_mutable: Some(true),
+            collection: CollectionToggle::None,
+            collection_details: CollectionDetailsToggle::None,
+            uses: UsesToggle::None,
+            rule_set: RuleSetToggle::None,
+            authorization_data: None,
+        },
+        delegate_record: None,
+        token: Some(ctx.accounts.nft_ta.to_account_info()),
+        edition: Some(ctx.accounts.nft_master_edition.to_account_info()),
+        authorization_rules_program: Some(
+            ctx.accounts.authorization_rules_program.to_account_info(),
+        ),
+        authorization_rules: Some(ctx.accounts.authorization_rules.to_account_info()),
+    };
+
+    metaplex_update(cpi_ctx, update_params)?;
 
     Ok(())
 }
