@@ -30,10 +30,10 @@ pub mod evolution {
     }
 
     pub fn auth_upgrade_nft<'info>(
-        ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
+        ctx: Context<'_, '_, '_, 'info, AuthUpgradeNft<'info>>,
         update_params: UpdateData,
     ) -> Result<()> {
-        upgrade_nft_ix(ctx, update_params)
+        auth_upgrade_nft_ix(ctx, update_params)
     }
 }
 
@@ -106,7 +106,6 @@ pub struct UpgradeNft<'info> {
 
 #[account]
 pub struct UpdateData {
-    pub name: String,
     pub uri: String,
     pub mint_token: bool,
 }
@@ -154,7 +153,7 @@ pub fn upgrade_nft_ix<'info>(
         update_args: UpdateArgs::V1 {
             new_update_authority: Some(metadata.update_authority),
             data: Some(Data {
-                name: data.name,
+                name: metadata.data.name,
                 symbol: metadata.data.symbol,
                 uri: data.uri,
                 seller_fee_basis_points: metadata.data.seller_fee_basis_points,
@@ -202,8 +201,18 @@ pub struct AuthUpgradeNft<'info> {
         constraint = authority.key().to_string() == "ovo1kT7RqrAZwFtgSGEgNfa7nHjeZoK6ykg1GknJEXG",
     )]
     pub authority: Signer<'info>,
+    /// CHECK: NO ISSUES
+    #[account()]
+    pub owner: UncheckedAccount<'info>,
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
+    #[account(
+        mut,
+        constraint = nft_ta.amount == 1,
+        associated_token::mint = nft_mint,
+        associated_token::authority = owner
+    )]
+    pub nft_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
     pub nft_metadata: UncheckedAccount<'info>,
@@ -246,7 +255,7 @@ pub fn auth_upgrade_nft_ix<'info>(
         update_args: UpdateArgs::V1 {
             new_update_authority: Some(metadata.update_authority),
             data: Some(Data {
-                name: data.name,
+                name: metadata.data.name,
                 symbol: metadata.data.symbol,
                 uri: data.uri,
                 seller_fee_basis_points: metadata.data.seller_fee_basis_points,
