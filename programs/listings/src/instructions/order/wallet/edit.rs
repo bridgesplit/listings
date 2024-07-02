@@ -1,6 +1,5 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
-use vault::utils::{get_bump_in_seed_form, lamport_transfer};
+use anchor_lang::prelude::*;
+use program_utils::{get_bump_in_seed_form, lamport_transfer};
 
 use crate::{state::*, utils::transfer_sol};
 
@@ -13,7 +12,7 @@ pub struct EditBiddingWallet<'info> {
     #[account(
         mut,
         constraint = is_increase || amount_change <= wallet.balance,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         initializer.key().as_ref()],
         bump,
     )]
@@ -26,16 +25,10 @@ pub fn handler(
     ctx: Context<EditBiddingWallet>,
     amount_change: u64,
     is_increase: bool,
-) -> ProgramResult {
-    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
+) -> Result<()> {
+    let bump = &get_bump_in_seed_form(&ctx.bumps.wallet);
 
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
-
-    let signer_seeds = &[&[
-        WALLET_SEED.as_ref(),
-        ctx.accounts.initializer.key.as_ref(),
-        bump,
-    ][..]];
+    let signer_seeds = &[&[WALLET_SEED, ctx.accounts.initializer.key.as_ref(), bump][..]];
 
     Wallet::edit_balance(&mut ctx.accounts.wallet, is_increase, amount_change);
 

@@ -1,12 +1,11 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{
-    compressed_transfer,
-    mpl_bubblegum::{cpi::accounts::Transfer, program::Bubblegum},
+use anchor_lang::{
+    prelude::*,
+    solana_program::{program::invoke, system_instruction::transfer},
 };
-use vault::utils::lamport_transfer;
+use mpl_bubblegum::instructions::{TransferCpiAccounts, TransferInstructionArgs};
+use program_utils::bubblegum::compressed_transfer;
 
-use crate::{instructions::compressed::CompressedFillOrderData, state::*, utils::get_fee_amount};
+use crate::{instructions::compressed::CompressedFillOrderData, state::*};
 
 #[derive(Accounts)]
 #[instruction()]
@@ -22,14 +21,14 @@ pub struct CompressedFillBuyOrder<'info> {
     pub buyer: UncheckedAccount<'info>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         order.owner.as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -38,7 +37,7 @@ pub struct CompressedFillBuyOrder<'info> {
         mut,
         constraint = Order::is_active(order.state),
         constraint = order.market == market.key(),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.as_ref(),
         order.owner.as_ref()],
@@ -52,7 +51,7 @@ pub struct CompressedFillBuyOrder<'info> {
     )]
     pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
-    pub tree_authority: UncheckedAccount<'info>,
+    pub tree_config: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
@@ -60,9 +59,9 @@ pub struct CompressedFillBuyOrder<'info> {
     pub log_wrapper: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub compression_program: UncheckedAccount<'info>,
-    pub mpl_bubblegum: Program<'info, Bubblegum>,
+    /// CHECK: checked in cpi
+    pub mpl_bubblegum: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 impl<'info> CompressedFillBuyOrder<'info> {
@@ -75,19 +74,38 @@ impl<'info> CompressedFillBuyOrder<'info> {
         nonce: u64,
         index: u32,
     ) -> Result<()> {
-        let cpi_accounts = Transfer {
-            tree_authority: self.tree_authority.to_account_info(),
-            leaf_owner: self.initializer.to_account_info(),
-            leaf_delegate: self.initializer.to_account_info(),
-            new_leaf_owner: self.buyer.to_account_info(),
-            merkle_tree: self.merkle_tree.to_account_info(),
-            log_wrapper: self.log_wrapper.to_account_info(),
-            compression_program: self.compression_program.to_account_info(),
-            system_program: self.system_program.to_account_info(),
+        let cpi_accounts = TransferCpiAccounts {
+            tree_config: &self.tree_config.to_account_info(),
+            leaf_owner: (&self.initializer.to_account_info(), true),
+            leaf_delegate: (&self.initializer.to_account_info(), false),
+            new_leaf_owner: &self.wallet.to_account_info(),
+            merkle_tree: &self.merkle_tree.to_account_info(),
+            log_wrapper: &self.log_wrapper.to_account_info(),
+            compression_program: &self.compression_program.to_account_info(),
+            system_program: &self.system_program.to_account_info(),
         };
-        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
-            .with_remaining_accounts(ra);
-        compressed_transfer(ctx, &[], root, data_hash, creator_hash, nonce, index)
+
+        let args = TransferInstructionArgs {
+            root,
+            data_hash,
+            creator_hash,
+            index,
+            nonce,
+        };
+
+        let transformed: Vec<(&AccountInfo, bool, bool)> = ra
+            .iter()
+            .map(|account| (account, account.is_signer, account.is_writable))
+            .collect();
+
+        let transformed_slice: &[(&AccountInfo, bool, bool)] = &transformed;
+        compressed_transfer(
+            self.mpl_bubblegum.to_account_info(),
+            cpi_accounts,
+            transformed_slice,
+            &[],
+            args,
+        )
     }
 }
 
@@ -97,9 +115,10 @@ impl<'info> CompressedFillBuyOrder<'info> {
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
     data: CompressedFillOrderData,
-) -> ProgramResult {
+) -> Result<()> {
     // edit wallet account to decrease balance
-    msg!("Edit wallet balance: {}", ctx.accounts.wallet.key());
+    let wallet_account = ctx.accounts.wallet.to_account_info();
+    msg!("Edit wallet balance: {}", wallet_account.key());
     Wallet::edit_balance(&mut ctx.accounts.wallet, false, ctx.accounts.order.price);
 
     ctx.accounts.transfer_compressed_nft(
@@ -112,29 +131,29 @@ pub fn handler<'info>(
     )?;
 
     // transfer sol from buyer to seller
-    lamport_transfer(
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.initializer.to_account_info(),
-        ctx.accounts.order.price,
-    )?;
-
-    let fee_amount = get_fee_amount(ctx.accounts.order.price);
-    // transfer fee to treasury
-    lamport_transfer(
-        ctx.accounts.wallet.to_account_info(),
-        ctx.accounts.treasury.to_account_info(),
-        fee_amount,
+    invoke(
+        &transfer(
+            &wallet_account.key(),
+            &ctx.accounts.initializer.key(),
+            ctx.accounts.order.price,
+        ),
+        &[
+            wallet_account,
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
     )?;
 
     // edit order
     let price = ctx.accounts.order.price;
     let size = ctx.accounts.order.size;
 
+    let clock = Clock::get()?;
     Order::edit_buy(
         &mut ctx.accounts.order,
         price,
         size - 1,
-        ctx.accounts.clock.unix_timestamp,
+        clock.unix_timestamp,
     );
 
     if size == 1 {

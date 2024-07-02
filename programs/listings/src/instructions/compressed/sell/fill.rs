@@ -1,10 +1,7 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{
-    compressed_transfer,
-    mpl_bubblegum::{cpi::accounts::Transfer, program::Bubblegum},
-};
-use vault::utils::get_bump_in_seed_form;
+use anchor_lang::prelude::*;
+use mpl_bubblegum::instructions::{TransferCpiAccounts, TransferInstructionArgs};
+use program_utils::bubblegum::compressed_transfer;
+use program_utils::get_bump_in_seed_form;
 
 use crate::{
     instructions::compressed::CompressedFillOrderData,
@@ -26,14 +23,14 @@ pub struct CompressedFillSellOrder<'info> {
     pub seller: UncheckedAccount<'info>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         seller.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -42,7 +39,7 @@ pub struct CompressedFillSellOrder<'info> {
         mut,
         constraint = Order::is_active(order.state),
         constraint = order.market == market.key(),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.as_ref(),
         order.owner.as_ref()],
@@ -57,7 +54,7 @@ pub struct CompressedFillSellOrder<'info> {
     )]
     pub treasury: AccountInfo<'info>,
     /// CHECK: checked in cpi
-    pub tree_authority: UncheckedAccount<'info>,
+    pub tree_config: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
@@ -65,9 +62,9 @@ pub struct CompressedFillSellOrder<'info> {
     pub log_wrapper: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub compression_program: UncheckedAccount<'info>,
-    pub mpl_bubblegum: Program<'info, Bubblegum>,
+    /// CHECK: checked in cpi
+    pub mpl_bubblegum: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 impl<'info> CompressedFillSellOrder<'info> {
@@ -80,30 +77,37 @@ impl<'info> CompressedFillSellOrder<'info> {
         creator_hash: [u8; 32],
         index: u32,
     ) -> Result<()> {
-        let cpi_accounts = Transfer {
-            tree_authority: self.tree_authority.to_account_info(),
-            leaf_owner: self.wallet.to_account_info(),
-            leaf_delegate: self.wallet.to_account_info(),
-            new_leaf_owner: self.initializer.to_account_info(),
-            merkle_tree: self.merkle_tree.to_account_info(),
-            log_wrapper: self.log_wrapper.to_account_info(),
-            compression_program: self.compression_program.to_account_info(),
-            system_program: self.system_program.to_account_info(),
+        let cpi_accounts = TransferCpiAccounts {
+            tree_config: &self.tree_config.to_account_info(),
+            leaf_owner: (&self.initializer.to_account_info(), true),
+            leaf_delegate: (&self.initializer.to_account_info(), false),
+            new_leaf_owner: &self.wallet.to_account_info(),
+            merkle_tree: &self.merkle_tree.to_account_info(),
+            log_wrapper: &self.log_wrapper.to_account_info(),
+            compression_program: &self.compression_program.to_account_info(),
+            system_program: &self.system_program.to_account_info(),
         };
-        let ctx = CpiContext::new_with_signer(
-            self.mpl_bubblegum.to_account_info(),
-            cpi_accounts,
-            signer_seeds,
-        )
-        .with_remaining_accounts(ra);
-        compressed_transfer(
-            ctx,
-            signer_seeds,
+
+        let args = TransferInstructionArgs {
             root,
             data_hash,
             creator_hash,
-            index as u64,
             index,
+            nonce: index as u64,
+        };
+
+        let transformed: Vec<(&AccountInfo, bool, bool)> = ra
+            .iter()
+            .map(|account| (account, account.is_signer, account.is_writable))
+            .collect();
+
+        let transformed_slice: &[(&AccountInfo, bool, bool)] = &transformed;
+        compressed_transfer(
+            self.mpl_bubblegum.to_account_info(),
+            cpi_accounts,
+            transformed_slice,
+            signer_seeds,
+            args,
         )
     }
 }
@@ -112,14 +116,9 @@ impl<'info> CompressedFillSellOrder<'info> {
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
     data: CompressedFillOrderData,
-) -> ProgramResult {
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
-
-    let signer_seeds = &[&[
-        WALLET_SEED.as_ref(),
-        ctx.accounts.order.owner.as_ref(),
-        bump,
-    ][..]];
+) -> Result<()> {
+    let bump = &get_bump_in_seed_form(&ctx.bumps.wallet);
+    let signer_seeds = &[&[WALLET_SEED, ctx.accounts.order.owner.as_ref(), bump][..]];
 
     ctx.accounts.transfer_compressed_nft(
         ctx.remaining_accounts.to_vec(),

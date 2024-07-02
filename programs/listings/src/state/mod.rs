@@ -1,6 +1,6 @@
-pub const MARKET_SEED: &str = "market";
-pub const ORDER_SEED: &str = "order";
-pub const WALLET_SEED: &str = "wallet";
+pub const MARKET_SEED: &[u8] = b"market";
+pub const ORDER_SEED: &[u8] = b"order";
+pub const WALLET_SEED: &[u8] = b"wallet";
 
 pub const PROTOCOL_FEES_BPS: u64 = 50;
 pub const PROTOCOL_TREASURY: &str = "ovo1kT7RqrAZwFtgSGEgNfa7nHjeZoK6ykg1GknJEXG";

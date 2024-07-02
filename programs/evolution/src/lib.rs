@@ -3,18 +3,13 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{burn, mint_to, Burn, Mint, MintTo, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{
-    anchor_lang,
-    pnft::update::{metaplex_update, MetaplexUpdate, UpdateParams},
-    MplTokenMetadata,
-};
-use token_metadata::{
-    instruction::{
-        CollectionDetailsToggle, CollectionToggle, RuleSetToggle, UpdateArgs, UsesToggle,
+use mpl_token_metadata::{
+    accounts::Metadata,
+    types::{
+        CollectionDetailsToggle, CollectionToggle, Data, RuleSetToggle, UpdateArgs, UsesToggle,
     },
-    solana_program::sysvar,
-    state::{Data, Metadata, TokenMetadataAccount},
 };
+use program_utils::pnft::update::{metaplex_update, MetaplexUpdate, UpdateParams};
 
 declare_id!("Evo1SmkHAaanve1Xp7dDRGZPLu4HFA19XiyTqGKLFRyP");
 
@@ -87,6 +82,7 @@ pub struct UpgradeNft<'info> {
     pub ovo_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
+    /// CHECK: deser. in Account
     pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
@@ -94,9 +90,9 @@ pub struct UpgradeNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata: Program<'info, MplTokenMetadata>,
     /// CHECK: checked by address and in cpi
-    #[account(address = sysvar::instructions::id())]
+    pub token_metadata: UncheckedAccount<'info>,
+    /// CHECK: checked by address and in cpi
     pub sysvar_instructions: UncheckedAccount<'info>,
     /// CHECK: Checks done in Metaplex
     pub authorization_rules: UncheckedAccount<'info>,
@@ -120,9 +116,10 @@ pub fn upgrade_nft_ix<'info>(
     ctx: Context<'_, '_, '_, 'info, UpgradeNft<'info>>,
     data: UpdateData,
 ) -> Result<()> {
-    let metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
+    let metadata =
+        Metadata::safe_deserialize(&ctx.accounts.nft_metadata.to_account_info().data.borrow())?;
 
-    if metadata.data.uri == data.uri {
+    if metadata.uri == data.uri {
         return Err(SpecificErrorCode::AlreadyUpgraded.into());
     }
 
@@ -153,11 +150,11 @@ pub fn upgrade_nft_ix<'info>(
         update_args: UpdateArgs::V1 {
             new_update_authority: Some(metadata.update_authority),
             data: Some(Data {
-                name: metadata.data.name,
-                symbol: metadata.data.symbol,
+                name: metadata.name,
+                symbol: metadata.symbol,
                 uri: data.uri,
-                seller_fee_basis_points: metadata.data.seller_fee_basis_points,
-                creators: metadata.data.creators,
+                seller_fee_basis_points: metadata.seller_fee_basis_points,
+                creators: metadata.creators,
             }),
             primary_sale_happened: Some(true),
             is_mutable: Some(true),
@@ -215,6 +212,7 @@ pub struct AuthUpgradeNft<'info> {
     pub nft_ta: Box<Account<'info, TokenAccount>>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
+    /// CHECK: deser. in Account
     pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: Checks done in Metaplex
     #[account(mut)]
@@ -222,9 +220,9 @@ pub struct AuthUpgradeNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata: Program<'info, MplTokenMetadata>,
     /// CHECK: checked by address and in cpi
-    #[account(address = sysvar::instructions::id())]
+    pub token_metadata: UncheckedAccount<'info>,
+    /// CHECK: checked by address and in cpi
     pub sysvar_instructions: UncheckedAccount<'info>,
     /// CHECK: Checks done in Metaplex
     pub authorization_rules: UncheckedAccount<'info>,
@@ -236,7 +234,8 @@ pub fn auth_upgrade_nft_ix<'info>(
     ctx: Context<'_, '_, '_, 'info, AuthUpgradeNft<'info>>,
     data: UpdateData,
 ) -> Result<()> {
-    let metadata = Metadata::from_account_info(&ctx.accounts.nft_metadata.to_account_info())?;
+    let metadata =
+        Metadata::safe_deserialize(&ctx.accounts.nft_metadata.to_account_info().data.borrow())?;
 
     let cpi_program = ctx.accounts.token_metadata.to_account_info();
 
@@ -255,11 +254,11 @@ pub fn auth_upgrade_nft_ix<'info>(
         update_args: UpdateArgs::V1 {
             new_update_authority: Some(metadata.update_authority),
             data: Some(Data {
-                name: metadata.data.name,
-                symbol: metadata.data.symbol,
+                name: metadata.name,
+                symbol: metadata.symbol,
                 uri: data.uri,
-                seller_fee_basis_points: metadata.data.seller_fee_basis_points,
-                creators: metadata.data.creators,
+                seller_fee_basis_points: metadata.seller_fee_basis_points,
+                creators: metadata.creators,
             }),
             primary_sale_happened: Some(true),
             is_mutable: Some(true),

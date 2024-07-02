@@ -3,3 +3,6 @@ members = [
     "programs/listings",
     "programs/evolution",
 ]
+
+[profile.release]
+overflow-checks = true

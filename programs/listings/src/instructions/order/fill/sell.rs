@@ -3,14 +3,11 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraTransferParams};
-use vault::{
-    errors::SpecificErrorCode,
-    utils::{get_bump_in_seed_form, MplTokenMetadata},
-};
+use mpl_token_metadata::accounts::Metadata;
+use program_utils::{get_bump_in_seed_form, pnft::utils::get_is_pnft, ExtraTransferParams};
 
 use crate::{
+    errors::MarketError,
     state::*,
     utils::{
         get_fee_amount, parse_remaining_accounts, pay_royalties, transfer_nft, transfer_sol,
@@ -32,14 +29,14 @@ pub struct FillSellOrder<'info> {
     pub seller: UncheckedAccount<'info>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         seller.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -48,7 +45,7 @@ pub struct FillSellOrder<'info> {
         mut,
         constraint = Order::is_active(order.state),
         constraint = order.market == market.key(),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.as_ref(),
         order.owner.as_ref()],
@@ -59,7 +56,8 @@ pub struct FillSellOrder<'info> {
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub nft_metadata: Box<Account<'info, Metadata>>,
+    /// CHECK: deser. in Account
+    pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
@@ -87,7 +85,8 @@ pub struct FillSellOrder<'info> {
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata_program: Program<'info, MplTokenMetadata>,
+    /// CHECK: checked by constraint and in cpi
+    pub token_metadata_program: UncheckedAccount<'info>,
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -106,7 +105,7 @@ pub struct FillSellOrder<'info> {
 /// Buyer transfers sol to seller account
 #[inline(always)]
 pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> Result<()> {
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
+    let bump = &get_bump_in_seed_form(&ctx.bumps.wallet);
 
     let parsed_accounts = parse_remaining_accounts(
         ctx.remaining_accounts.to_vec(),
@@ -125,18 +124,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
 
     let pnft_params = parsed_accounts.pnft_params;
 
-    let signer_seeds = &[&[
-        WALLET_SEED.as_ref(),
-        ctx.accounts.order.owner.as_ref(),
-        bump,
-    ][..]];
+    let signer_seeds = &[&[WALLET_SEED, ctx.accounts.order.owner.as_ref(), bump][..]];
 
     let nft_authority = ctx.accounts.wallet.to_account_info();
     let sol_holder = ctx.accounts.initializer.to_account_info();
 
     // validate seller
     if ctx.accounts.order.owner != ctx.accounts.seller.key() {
-        return Err(SpecificErrorCode::WrongAccount.into());
+        return Err(MarketError::WrongAccount.into());
     }
 
     if parsed_accounts.fees_on {
@@ -167,7 +162,9 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
         )?;
     }
 
-    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+    let metadata =
+        Metadata::safe_deserialize(&ctx.accounts.nft_metadata.to_account_info().data.borrow())?;
+    let is_pnft = get_is_pnft(&metadata);
 
     // unfreeze nft first so that a transfer can be made
     if !is_pnft {
@@ -218,7 +215,7 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, FillSellOrder<'info>>) -> 
     if is_pnft {
         pay_royalties(
             ctx.accounts.order.price,
-            ctx.accounts.nft_metadata.clone(),
+            ctx.accounts.nft_metadata.to_account_info().clone(),
             ctx.accounts.initializer.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             parsed_accounts.creator_accounts,

@@ -1,13 +1,13 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
+use anchor_lang::prelude::*;
 use anchor_lang::{solana_program::sysvar, Key};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::anchor_lang;
-use bridgesplit_program_utils::{pnft::utils::get_is_pnft, state::Metadata, ExtraRevokeParams};
-use token_metadata::instruction::RevokeArgs;
-use vault::utils::{get_bump_in_seed_form, MplTokenMetadata};
+use mpl_token_metadata::accounts::Metadata;
+use mpl_token_metadata::types::RevokeArgs;
+use program_utils::pnft::utils::get_is_pnft;
+use program_utils::{get_bump_in_seed_form, ExtraRevokeParams};
 
 use crate::{
     state::*,
@@ -25,7 +25,7 @@ pub struct CloseSellOrder<'info> {
         constraint = order.owner == initializer.key(),
         constraint = order.market == market.key(),
         constraint = Order::is_active(order.state),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.as_ref(),
         initializer.key().as_ref()],
@@ -35,14 +35,14 @@ pub struct CloseSellOrder<'info> {
     pub order: Box<Account<'info, Order>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
     pub market: Box<Account<'info, Market>>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         order.owner.as_ref()],
         bump,
     )]
@@ -50,7 +50,8 @@ pub struct CloseSellOrder<'info> {
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub nft_metadata: Box<Account<'info, Metadata>>,
+    /// CHECK: deser. in Account
+    pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: constraint check in multiple CPI calls
     pub nft_edition: UncheckedAccount<'info>,
     #[account(
@@ -65,7 +66,8 @@ pub struct CloseSellOrder<'info> {
     #[account(address = sysvar::instructions::id())]
     pub sysvar_instructions: UncheckedAccount<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata_program: Program<'info, MplTokenMetadata>,
+    /// CHECK: checked by constraint and in cpi
+    pub token_metadata_program: UncheckedAccount<'info>,
 }
 
 //remaining accounts
@@ -75,7 +77,7 @@ pub struct CloseSellOrder<'info> {
 // 4 delegate record or default
 
 #[inline(always)]
-pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) -> ProgramResult {
+pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) -> Result<()> {
     msg!("Close sell order account: {}", ctx.accounts.order.key());
 
     let parsed_remaining_accounts = parse_remaining_accounts(
@@ -88,15 +90,14 @@ pub fn handler<'info>(ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>) ->
 
     let pnft_params = parsed_remaining_accounts.pnft_params;
 
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
+    let bump = &get_bump_in_seed_form(&ctx.bumps.wallet);
 
-    let signer_seeds = &[&[
-        WALLET_SEED.as_ref(),
-        ctx.accounts.order.owner.as_ref(),
-        bump,
-    ][..]];
+    let signer_seeds = &[&[WALLET_SEED, ctx.accounts.order.owner.as_ref(), bump][..]];
 
-    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+    let metadata =
+        Metadata::safe_deserialize(&ctx.accounts.nft_metadata.to_account_info().data.borrow())?;
+
+    let is_pnft = get_is_pnft(&metadata);
 
     // unfreeze nft if not pnft
     if !is_pnft {

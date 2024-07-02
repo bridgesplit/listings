@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
 use crate::{state::*, utils::parse_remaining_accounts};
 
@@ -15,14 +14,14 @@ pub struct InitBuyOrder<'info> {
         mut,
         // make sure bidding wallet has enough balance to place the order
         constraint = wallet.balance >= data.price.checked_mul(data.size).unwrap(),
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         initializer.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -30,7 +29,7 @@ pub struct InitBuyOrder<'info> {
     #[account(
         constraint = data.price > 0 && data.size > 0,
         init,
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         data.nonce.as_ref(),
         market.key().as_ref(),
         initializer.key().as_ref()],
@@ -53,7 +52,7 @@ pub struct InitBuyOrder<'info> {
 // 4 ovol nft metadata [optional]
 
 #[inline(always)]
-pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
+pub fn handler(ctx: Context<InitBuyOrder>, data: InitOrderData) -> Result<()> {
     msg!("Initialize a new buy order: {}", ctx.accounts.order.key());
 
     let parsed_accounts = parse_remaining_accounts(

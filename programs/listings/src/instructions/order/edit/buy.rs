@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
 use crate::state::*;
 
@@ -13,7 +12,7 @@ pub struct EditBuyOrder<'info> {
     pub initializer: Signer<'info>,
     #[account(
         constraint = market.key() == order.market,
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -23,7 +22,7 @@ pub struct EditBuyOrder<'info> {
         constraint = order.owner == initializer.key(),
         constraint = data.new_size > 0 && data.new_price > 0,
         constraint = Order::is_active(order.state),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.key().as_ref(),
         initializer.key().as_ref()],
@@ -34,7 +33,7 @@ pub struct EditBuyOrder<'info> {
         mut,
         // make sure bidding wallet has enough balance to place the order
         constraint = wallet.balance >= data.new_price.checked_mul(data.new_size).unwrap(),
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         initializer.key().as_ref()],
         bump,
     )]
@@ -44,7 +43,7 @@ pub struct EditBuyOrder<'info> {
 }
 
 #[inline(always)]
-pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
+pub fn handler(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> Result<()> {
     msg!("Edit buy order: {}", ctx.accounts.order.key());
     // edit the order with size
     Order::edit_buy(

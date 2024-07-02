@@ -1,6 +1,5 @@
 use crate::state::*;
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
 use super::EditSellOrderData;
 
@@ -17,7 +16,7 @@ pub struct EditSellOrder<'info> {
         constraint = order.owner == initializer.key(),
         constraint = data.new_price > 0,
         constraint = Order::is_active(order.state),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.key().as_ref(),
         order.owner.as_ref()],
@@ -27,7 +26,7 @@ pub struct EditSellOrder<'info> {
     #[account(
         constraint = Market::is_active(market.state),
         constraint = market.key() == order.market,
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -36,7 +35,7 @@ pub struct EditSellOrder<'info> {
 }
 
 #[inline(always)]
-pub fn handler(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> ProgramResult {
+pub fn handler(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> Result<()> {
     msg!("Edit sell order: {}", ctx.accounts.order.key());
     // update the sell order account
     Order::edit_sell(

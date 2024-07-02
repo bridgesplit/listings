@@ -1,6 +1,4 @@
-use anchor_lang::Key;
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
 use crate::state::*;
 
@@ -15,7 +13,7 @@ pub struct CloseBuyOrder<'info> {
         constraint = order.owner == initializer.key(),
         constraint = Order::is_active(order.state),
         // constraint = order.side == OrderSide::Buy.into() || order.side == OrderSide::CompressedBuy.into(),
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         order.nonce.as_ref(),
         order.market.as_ref(),
         initializer.key().as_ref()],
@@ -25,7 +23,7 @@ pub struct CloseBuyOrder<'info> {
     pub order: Box<Account<'info, Order>>,
     #[account(
         constraint = market.key() == order.market,
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -33,7 +31,7 @@ pub struct CloseBuyOrder<'info> {
 }
 
 #[inline(always)]
-pub fn handler(ctx: Context<CloseBuyOrder>) -> ProgramResult {
+pub fn handler(ctx: Context<CloseBuyOrder>) -> Result<()> {
     msg!("Close buy order account: {}", ctx.accounts.order.key());
     ctx.accounts.order.state = OrderState::Closed.into();
 

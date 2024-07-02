@@ -1,5 +1,4 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
 use crate::state::*;
 
@@ -14,7 +13,7 @@ pub struct InitMarket<'info> {
     pub pool_mint: UncheckedAccount<'info>,
     #[account(
         init,
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         pool_mint.key().as_ref()],
         bump,
         payer = initializer,
@@ -25,7 +24,7 @@ pub struct InitMarket<'info> {
 }
 
 #[inline(always)]
-pub fn handler(ctx: Context<InitMarket>) -> ProgramResult {
+pub fn handler(ctx: Context<InitMarket>) -> Result<()> {
     msg!("Initializing new market");
     Market::init(
         &mut ctx.accounts.market,

@@ -1,6 +1,6 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
+pub mod errors;
 mod instructions;
 pub mod state;
 pub mod utils;
@@ -18,13 +18,13 @@ pub mod listings {
 
     /// initializer a new market
     #[inline(always)]
-    pub fn init_market(ctx: Context<InitMarket>) -> ProgramResult {
+    pub fn init_market(ctx: Context<InitMarket>) -> Result<()> {
         instructions::market::init::handler(ctx)
     }
 
     /// initializer a new bid
     #[inline(always)]
-    pub fn init_buy_order(ctx: Context<InitBuyOrder>, data: InitOrderData) -> ProgramResult {
+    pub fn init_buy_order(ctx: Context<InitBuyOrder>, data: InitOrderData) -> Result<()> {
         instructions::order::init::buy::handler(ctx, data)
     }
 
@@ -33,19 +33,19 @@ pub mod listings {
     pub fn init_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
         data: InitOrderData,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::order::init::sell::handler(ctx, data)
     }
 
     /// edit a bid
     #[inline(always)]
-    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> ProgramResult {
+    pub fn edit_buy_order(ctx: Context<EditBuyOrder>, data: EditBuyOrderData) -> Result<()> {
         instructions::order::edit::buy::handler(ctx, data)
     }
 
     /// edit a listing
     #[inline(always)]
-    pub fn edit_sell_order(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> ProgramResult {
+    pub fn edit_sell_order(ctx: Context<EditSellOrder>, data: EditSellOrderData) -> Result<()> {
         instructions::order::edit::sell::handler(ctx, data)
     }
 
@@ -67,7 +67,7 @@ pub mod listings {
 
     /// cancel a buy order
     #[inline(always)]
-    pub fn close_buy_order(ctx: Context<CloseBuyOrder>) -> ProgramResult {
+    pub fn close_buy_order(ctx: Context<CloseBuyOrder>) -> Result<()> {
         instructions::order::close::buy::handler(ctx)
     }
 
@@ -75,13 +75,13 @@ pub mod listings {
     #[inline(always)]
     pub fn close_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CloseSellOrder<'info>>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::order::close::sell::handler(ctx)
     }
 
     /// initializer a new bidding wallet
     #[inline(always)]
-    pub fn init_wallet(ctx: Context<InitBiddingWallet>, amount: u64) -> ProgramResult {
+    pub fn init_wallet(ctx: Context<InitBiddingWallet>, amount: u64) -> Result<()> {
         instructions::wallet::init::handler(ctx, amount)
     }
 
@@ -91,7 +91,7 @@ pub mod listings {
         ctx: Context<EditBiddingWallet>,
         amount_change: u64,
         increase: bool,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::wallet::edit::handler(ctx, amount_change, increase)
     }
 
@@ -100,7 +100,7 @@ pub mod listings {
     pub fn compressed_init_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedInitSellOrder<'info>>,
         data: CompressedOrderData,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::compressed::sell::init::handler(ctx, data)
     }
 
@@ -108,7 +108,7 @@ pub mod listings {
     pub fn compressed_fill_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedFillSellOrder<'info>>,
         data: CompressedFillOrderData,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::compressed::sell::fill::handler(ctx, data)
     }
 
@@ -116,7 +116,7 @@ pub mod listings {
     pub fn compressed_close_sell_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedCloseSellOrder<'info>>,
         data: CompressedOrderData,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::compressed::sell::close::handler(ctx, data)
     }
 
@@ -124,7 +124,7 @@ pub mod listings {
     pub fn compressed_fill_buy_order<'info>(
         ctx: Context<'_, '_, '_, 'info, CompressedFillBuyOrder<'info>>,
         data: CompressedFillOrderData,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         instructions::compressed::buy::fill::handler(ctx, data)
     }
 }

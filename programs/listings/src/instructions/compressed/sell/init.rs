@@ -1,10 +1,7 @@
-use anchor_lang::{prelude::*, solana_program::entrypoint::ProgramResult};
-use bridgesplit_program_utils::anchor_lang;
+use anchor_lang::prelude::*;
 
-use bridgesplit_program_utils::{
-    compressed_transfer,
-    mpl_bubblegum::{cpi::accounts::Transfer, program::Bubblegum},
-};
+use mpl_bubblegum::instructions::{TransferCpiAccounts, TransferInstructionArgs};
+use program_utils::bubblegum::compressed_transfer;
 use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{instructions::compressed::CompressedOrderData, state::*};
@@ -17,14 +14,14 @@ pub struct CompressedInitSellOrder<'info> {
     pub initializer: Signer<'info>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         initializer.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -32,7 +29,7 @@ pub struct CompressedInitSellOrder<'info> {
     #[account(
         constraint = data.price > 0,
         init,
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         data.order_nonce.as_ref(),
         market.key().as_ref(),
         initializer.key().as_ref()],
@@ -48,7 +45,7 @@ pub struct CompressedInitSellOrder<'info> {
     )]
     pub appraisal: Box<Account<'info, Appraisal>>,
     /// CHECK: checked in cpi
-    pub tree_authority: UncheckedAccount<'info>,
+    pub tree_config: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     #[account(mut)]
     pub merkle_tree: UncheckedAccount<'info>,
@@ -56,9 +53,9 @@ pub struct CompressedInitSellOrder<'info> {
     pub log_wrapper: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     pub compression_program: UncheckedAccount<'info>,
-    pub mpl_bubblegum: Program<'info, Bubblegum>,
+    /// CHECK: checked in cpi
+    pub mpl_bubblegum: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 impl<'info> CompressedInitSellOrder<'info> {
@@ -71,19 +68,38 @@ impl<'info> CompressedInitSellOrder<'info> {
         nonce: u64,
         index: u32,
     ) -> Result<()> {
-        let cpi_accounts = Transfer {
-            tree_authority: self.tree_authority.to_account_info(),
-            leaf_owner: self.initializer.to_account_info(),
-            leaf_delegate: self.initializer.to_account_info(),
-            new_leaf_owner: self.wallet.to_account_info(),
-            merkle_tree: self.merkle_tree.to_account_info(),
-            log_wrapper: self.log_wrapper.to_account_info(),
-            compression_program: self.compression_program.to_account_info(),
-            system_program: self.system_program.to_account_info(),
+        let cpi_accounts = TransferCpiAccounts {
+            tree_config: &self.tree_config.to_account_info(),
+            leaf_owner: (&self.initializer.to_account_info(), true),
+            leaf_delegate: (&self.initializer.to_account_info(), false),
+            new_leaf_owner: &self.wallet.to_account_info(),
+            merkle_tree: &self.merkle_tree.to_account_info(),
+            log_wrapper: &self.log_wrapper.to_account_info(),
+            compression_program: &self.compression_program.to_account_info(),
+            system_program: &self.system_program.to_account_info(),
         };
-        let ctx = CpiContext::new(self.mpl_bubblegum.to_account_info(), cpi_accounts)
-            .with_remaining_accounts(ra);
-        compressed_transfer(ctx, &[], root, data_hash, creator_hash, nonce, index)
+
+        let args = TransferInstructionArgs {
+            root,
+            data_hash,
+            creator_hash,
+            nonce,
+            index,
+        };
+
+        let transformed: Vec<(&AccountInfo, bool, bool)> = ra
+            .iter()
+            .map(|account| (account, account.is_signer, account.is_writable))
+            .collect();
+
+        let transformed_slice: &[(&AccountInfo, bool, bool)] = &transformed;
+        compressed_transfer(
+            self.mpl_bubblegum.to_account_info(),
+            cpi_accounts,
+            transformed_slice,
+            &[],
+            args,
+        )
     }
 }
 
@@ -93,9 +109,10 @@ impl<'info> CompressedInitSellOrder<'info> {
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CompressedInitSellOrder<'info>>,
     data: CompressedOrderData,
-) -> ProgramResult {
+) -> Result<()> {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
 
+    let clock = Clock::get()?;
     // create a new order with size 1
     Order::init(
         &mut ctx.accounts.order,
@@ -104,7 +121,7 @@ pub fn handler<'info>(
         ctx.accounts.wallet.key(),
         data.order_nonce,
         data.mint_id,
-        ctx.accounts.clock.unix_timestamp,
+        clock.unix_timestamp,
         OrderSide::Sell.into(),
         1, // always 1
         data.price,

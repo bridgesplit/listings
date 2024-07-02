@@ -1,16 +1,10 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{entrypoint::ProgramResult, sysvar},
-};
+use anchor_lang::{prelude::*, solana_program::sysvar};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
-use bridgesplit_program_utils::{anchor_lang, pnft::utils::get_is_pnft};
-use bridgesplit_program_utils::{
-    get_bump_in_seed_form, state::Metadata, ExtraDelegateParams, MplTokenMetadata,
-};
-use token_metadata::instruction::DelegateArgs;
+use mpl_token_metadata::{accounts::Metadata, types::DelegateArgs};
+use program_utils::{get_bump_in_seed_form, pnft::utils::get_is_pnft, ExtraDelegateParams};
 use vault::state::{Appraisal, APPRAISAL_SEED};
 
 use crate::{
@@ -28,14 +22,14 @@ pub struct InitSellOrder<'info> {
     pub initializer: Signer<'info>,
     #[account(
         mut,
-        seeds = [WALLET_SEED.as_ref(),
+        seeds = [WALLET_SEED,
         initializer.key().as_ref()],
         bump,
     )]
     pub wallet: Box<Account<'info, Wallet>>,
     #[account(
         constraint = Market::is_active(market.state),
-        seeds = [MARKET_SEED.as_ref(),
+        seeds = [MARKET_SEED,
         market.pool_mint.as_ref()],
         bump,
     )]
@@ -43,7 +37,7 @@ pub struct InitSellOrder<'info> {
     #[account(
         constraint = data.price > 0 && data.size > 0,
         init,
-        seeds = [ORDER_SEED.as_ref(),
+        seeds = [ORDER_SEED,
         data.nonce.as_ref(),
         market.key().as_ref(),
         initializer.key().as_ref()],
@@ -61,7 +55,8 @@ pub struct InitSellOrder<'info> {
     #[account(mut)]
     pub nft_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub nft_metadata: Box<Account<'info, Metadata>>,
+    /// CHECK: deser. in Account
+    pub nft_metadata: UncheckedAccount<'info>,
     /// CHECK: checked in cpi
     #[account(mut)]
     pub nft_edition: UncheckedAccount<'info>,
@@ -77,8 +72,8 @@ pub struct InitSellOrder<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_metadata_program: Program<'info, MplTokenMetadata>,
-    pub clock: Sysvar<'info, Clock>,
+    /// CHECK: checked by constraint and in cpi
+    pub token_metadata_program: UncheckedAccount<'info>,
 }
 //remaining accounts
 // 0 token_record or default,
@@ -94,7 +89,7 @@ pub struct InitSellOrder<'info> {
 pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, InitSellOrder<'info>>,
     data: InitOrderData,
-) -> ProgramResult {
+) -> Result<()> {
     msg!("Initialize a new sell order: {}", ctx.accounts.order.key());
 
     let parsed_accounts = parse_remaining_accounts(
@@ -107,6 +102,7 @@ pub fn handler<'info>(
 
     let pnft_params = parsed_accounts.pnft_params;
 
+    let clock = Clock::get()?;
     // create a new order with size 1
     Order::init(
         &mut ctx.accounts.order,
@@ -115,7 +111,7 @@ pub fn handler<'info>(
         ctx.accounts.wallet.key(),
         data.nonce,
         ctx.accounts.nft_mint.key(),
-        ctx.accounts.clock.unix_timestamp,
+        clock.unix_timestamp,
         OrderSide::Sell.into(),
         1, // always 1
         data.price,
@@ -123,15 +119,13 @@ pub fn handler<'info>(
         parsed_accounts.fees_on,
     );
 
-    let bump = &get_bump_in_seed_form(ctx.bumps.get("wallet").unwrap());
+    let bump = &get_bump_in_seed_form(&ctx.bumps.wallet);
 
-    let signer_seeds = &[&[
-        WALLET_SEED.as_ref(),
-        ctx.accounts.initializer.key.as_ref(),
-        bump,
-    ][..]];
+    let signer_seeds = &[&[WALLET_SEED, ctx.accounts.initializer.key.as_ref(), bump][..]];
 
-    let is_pnft = get_is_pnft(&ctx.accounts.nft_metadata);
+    let metadata = Metadata::safe_deserialize(&ctx.accounts.nft_metadata.data.borrow())?;
+
+    let is_pnft = get_is_pnft(&metadata);
 
     // freeze the nft of the seller with the bidding wallet account as the authority
     delegate_nft(

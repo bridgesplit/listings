@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use bridgesplit_program_utils::anchor_lang;
 
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy)]
 pub struct EditBuyOrderData {
